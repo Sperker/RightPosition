@@ -1,12 +1,13 @@
-# SizerAlternative
+# RightPosition
 
 [![Platform: Windows](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011-blue.svg)](https://microsoft.com/windows)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
 [![Dependencies: None](https://img.shields.io/badge/Dependencies-Zero%20%28Standalone%29-brightgreen.svg)]()
+[![Security: No DLL Injection](https://img.shields.io/badge/Security-No%20DLL%20Injection%20%7C%20User%20Space-success.svg)]()
 [![Language: AHK v2](https://img.shields.io/badge/Language-AutoHotkey%20v2-orange.svg)](https://www.autohotkey.com/)
 
-> **A modern, lightweight, and future-proof window resizing & positioning utility for Windows 10 & 11.**  
-> Built as a portable 1:1 replacement for the classic [Sizer 4.0](https://www.brianapps.net/sizer4/).
+> **A lightweight, portable, and enterprise-ready window resizing & positioning utility for Windows 10 & 11.**  
+> Built as a modern, auditable, and future-proof open-source alternative to legacy utilities like [Sizer 4.0](https://www.brianapps.net/sizer4/).
 
 ---
 
@@ -16,34 +17,67 @@
 
 ---
 
+## 🏢 Why RightPosition? (Enterprise & Open-Stack Ready)
+
+Many developers, screencasters, QA engineers, and power users rely on window management utilities like Brian Apps' classic **Sizer** to enforce precise resolutions (e.g., 1080p, 720p) and reproducible window placements. However, in modern corporate environments, legacy tools face critical roadblocks:
+
+1. **Closed-Source & Abandonware Risks**: Sizer is closed-source freeware maintained by a single author with irregular updates. Enterprise compliance teams cannot audit its binary, preventing rollout across secured workstations.
+2. **Security & EDR Conflicts with Hook-Tools**: Alternatives like SmartSystemMenu use global DLL-injection (`WH_CALLWNDPROC` hooks) and require administrator privileges. Modern Endpoint Detection & Response (EDR) software (CrowdStrike, Defender for Endpoint, SentinelOne) routinely flags or blocks this behavior.
+3. **Shortcomings of Native Windows & PowerToys Tools**: Built-in Windows 11 Snap Layouts and Microsoft PowerToys (FancyZones) only tile windows into fixed full-screen grid partitions. They cannot set arbitrary floating pixel dimensions (e.g., floating 1440×900 for video capture), nor can they capture and reapply a window's exact geometry on the fly.
+
+**RightPosition** solves this by providing a **100% open, auditable, and lightweight stack**:
+- **0 KB external runtimes**: Runs as a single portable 1.2 MB executable.
+- **Zero Administrator Rights**: Operates completely in non-elevated user-space.
+- **Zero DLL Injection**: No foreign process memory tampering; fully compliant with enterprise security policies.
+- **Future-Proof**: Built directly against core Win32 User32 & DWM APIs that maintain backward- and forward-compatibility across Windows generations.
+
+---
+
+## 📊 Comprehensive Feature & Tool Comparison Matrix
+
+| Feature / Criteria | 🚀 RightPosition | 📦 Sizer 4.0 | 🔧 SmartSystemMenu | 🪟 MS PowerToys (FancyZones) | 🖥️ Windows 11 Snap Layouts |
+| :--- | :---: | :---: | :---: | :---: | :---: |
+| **1-Click Capture Size & Position** | ✔️ **Yes** | ✔️ Yes | ❌ No | ❌ No | ❌ No |
+| **Restore Exact Pixel Dimensions** | ✔️ **Yes** | ✔️ Yes | ✔️ Yes (Size only) | ❌ No (Grid-bound) | ❌ No (Grid-bound) |
+| **Free Floating Placement (X, Y)** | ✔️ **Yes** | ✔️ Yes | ❌ No (Predefined) | ❌ No (Tiled) | ❌ No (Tiled) |
+| **Auditable Open-Source Code** | ✔️ **100% (MIT)** | ❌ Closed Source | ✔️ Open Source | ✔️ Open Source | ❌ Closed Source |
+| **No Admin Rights Required** | ✔️ **Yes** | ✔️ Yes | ⚠️ Needs Admin | ⚠️ Setup / Elevated | ✔️ Native |
+| **No DLL-Injection (EDR-Friendly)** | ✔️ **Zero Hooks** | ✔️ Clean | ⚠️ DLL Injection | ✔️ Clean | ✔️ Native |
+| **Modern App Support (Chrome/Electron)** | ✔️ **Full** | ⚠️ Partial | ⚠️ Buggy on CSD | ✔️ Full | ✔️ Full |
+| **Multi-Monitor Intelligent Anchoring** | ✔️ **Yes** | ✔️ Yes | ✔️ Yes | ✔️ Yes | ✔️ Yes |
+| **DWM Shadow Border Compensation** | ✔️ **Yes** (Pixel-exact) | ⚠️ Partial | ❌ No | ⚠️ Windows default | ⚠️ Windows default |
+| **Footprint / System Overhead** | ✔️ **~1.2 MB Portable** | ✔️ Small | ⚠️ .NET Runtime | ⚠️ >200 MB Installation | ✔️ System native |
+| **No Installation / Zero Registry Pollution** | ✔️ **Yes (Local INI)** | ✔️ Yes | ✔️ Yes | ❌ Requires Installer | ✔️ Native |
+
+---
+
 ## 🌟 Highlights & Features
 
-- **💾 1-Click Size & Position Presets**: Capture any window's exact dimensions (Width × Height) and position (X, Y) with one click and save it as a reusable preset.
-- **⭐ Instant Layout Restoration**: Click any saved preset (`⭐`) to immediately restore the window's size and coordinates.
-- **🖥️ Smart Multi-Monitor Support**: Uses Win32 `MonitorFromWindow` and `GetMonitorInfoW` to detect which display the window resides on. Windows stay anchored to their active monitor and won't jump to the primary screen.
-- **🪟 Windows 10/11 DWM Border Compensation**: Modern Windows windows have invisible drop-shadow borders (~7–8 px). SizerAlternative calculates these offsets via `DwmGetWindowAttribute` to guarantee pixel-exact visible dimensions.
-- **🖱️ Flexible Triggers**:
-  - **Middle-Click on Title Bar** (like classic Sizer, detected crash-safely via `WM_NCHITTEST`).
+- **💾 1-Click Geometry Capture**: With a single click on any window, capture its visible width, height, and relative X/Y coordinates on its monitor, and save it as a named preset.
+- **⭐ Instant Preset Restoration**: Presets appear directly at the top of the menu (`⭐`). Clicking a preset instantly snaps the window back to that exact size and position.
+- **🖥️ Multi-Monitor Awareness**: Windows stay anchored to the display they currently reside on via Win32 `MonitorFromWindow`.
+- **🪟 Windows 10/11 DWM Border Compensation**: Automatically accounts for invisible DWM drop shadows (~7–8 px) using `DwmGetWindowAttribute` to guarantee exact outer boundaries.
+- **🖱️ Versatile, Non-Intrusive Triggers**:
+  - **Middle-Click on Title Bar** (classic Sizer workflow, detected via crash-safe `WM_NCHITTEST`).
   - **<kbd>Ctrl</kbd> + Right-Click** on any window.
-  - **<kbd>Ctrl</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>** (global hotkey, customizable).
-- **📋 Live Size Display & Clipboard Copy**: The top line of the menu displays the current window's dimensions; clicking it copies the values to your clipboard.
-- **📐 Custom Dimensions Dialog**: Quickly resize to arbitrary dimensions (e.g., `1280x720`).
-- **⚙️ Portable Configuration**: All settings and presets are stored in a clean local [`settings.ini`](settings.ini).
-- **🚀 100% Standalone & Portable**: Runs as a single 1.2 MB executable (`SizerAlternative.exe`). **Zero dependencies**, no installation, and no AutoHotkey runtime required on target machines.
+  - **<kbd>Ctrl</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>** (customizable global hotkey).
+- **📋 Live Window Metrics**: Menu header displays the active window's dimensions; click to copy to clipboard.
+- **📐 Custom Size Dialog**: Prompt for ad-hoc custom dimensions (e.g. `1280x720`).
+- **⚙️ Portable INI Configuration**: Simple, human-readable [`settings.ini`](settings.ini).
 
 ---
 
 ## 🚀 Quick Start
 
-### Running the Application
-1. Download or copy the project files to any folder or USB flash drive.
-2. Launch **`SizerAlternative.exe`**.
-3. It will appear in your system tray with the custom window-sizer icon.
+### Running RightPosition
+1. Download or copy the project files to any folder or USB drive.
+2. Launch **`RightPosition.exe`**.
+3. It appears in the notification area (system tray) with the custom icon.
 4. Open the menu on any target window:
-   - **Middle-click** the window's title bar, **OR**
+   - **Middle-click** the window title bar, **OR**
    - Press **<kbd>Ctrl</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>**, **OR**
-   - Press **<kbd>Ctrl</kbd> + Right-Click** anywhere on the window.
-5. Select **`💾 Save Current Position & Size...`**, enter a name, and press <kbd>Enter</kbd>.
+   - Press **<kbd>Ctrl</kbd> + Right-Click** on the window.
+5. Select **`💾 Aktuelle Position & Größe speichern...`**, give it a name, and press <kbd>Enter</kbd>.
 6. The preset is now permanently available at the top of the menu!
 
 ---
@@ -54,9 +88,9 @@
 ┌────────────────────────────────────────────────────────┐
 │ Aktuell: 1440 × 900  [Pos: 120, 80]  (Kopieren)        │  <- Click to copy dimensions
 ├────────────────────────────────────────────────────────┤
-│ 💾 Aktuelle Position & Größe speichern...              │  <- Save 1-click preset
+│ 💾 Aktuelle Position & Größe speichern...              │  <- 1-click preset save
 ├────────────────────────────────────────────────────────┤
-│ ⭐ Mein Arbeits-Layout (1440 × 900 @ 120, 80)          │  <- Custom saved presets
+│ ⭐ Mein Arbeits-Layout (1440 × 900 @ 120, 80)          │  <- Saved custom layouts
 │ ⭐ Split Screen Links (960 × 1040 @ 0, 0)              │
 ├────────────────────────────────────────────────────────┤
 │ 1920 x 1080 (Full HD, Zentriert)                       │  <- Standard presets
@@ -77,20 +111,18 @@
 
 ## ⚙️ Configuration (`settings.ini`)
 
-The [`settings.ini`](settings.ini) file is automatically created on first launch if not present:
-
 ```ini
 [Settings]
-; Global hotkey (^ = Ctrl, # = Win, ! = Alt, + = Shift)
+; Hotkey (^ = Ctrl, # = Win, ! = Alt, + = Shift)
 Hotkey=^#z
 
-; Open menu via middle-click on window title bar (1 = On, 0 = Off)
+; Middle-click title bar trigger (1 = On, 0 = Off)
 MiddleClickTitleBar=1
 
-; Open menu via Ctrl + Right-Click on window (1 = On, 0 = Off)
+; Ctrl + Right-Click trigger (1 = On, 0 = Off)
 CtrlRightClick=1
 
-; Compensate invisible DWM shadow borders on Windows 10/11 (1 = On, 0 = Off)
+; DWM invisible frame compensation (1 = On, 0 = Off)
 CompensateBorders=1
 
 [Presets]
@@ -105,50 +137,34 @@ Item3=1280 x 720 (HD 720p, Zentriert)|1280|720|center|0|0
 
 ## 🛠️ Building from Source
 
-The repository includes both the compiled binary and the full, clean AutoHotkey v2 source code.
-
-### Prerequisites (Only needed for compiling)
+### Prerequisites (Compilation only)
 - Windows 10 or 11
 - [AutoHotkey v2](https://www.autohotkey.com/) installed (includes `Ahk2Exe`)
 
 ### 1-Click Build
-Simply run the included build script:
+Run the included build script:
 ```cmd
 build.bat
 ```
 
-Or run via PowerShell:
+Or compile manually via PowerShell:
 ```powershell
-& "C:\Program Files\AutoHotkey\Compiler\Ahk2Exe.exe" /in "SizerAlternative.ahk" /out "SizerAlternative.exe" /icon "app.ico" /base "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe" /silent
+& "C:\Program Files\AutoHotkey\Compiler\Ahk2Exe.exe" /in "RightPosition.ahk" /out "RightPosition.exe" /icon "app.ico" /base "C:\Program Files\AutoHotkey\v2\AutoHotkey64.exe" /silent
 ```
-
----
-
-## 📊 Comparison with Alternatives
-
-| Feature | SizerAlternative | Sizer 4.0 | SmartSystemMenu |
-| :--- | :---: | :---: | :---: |
-| **Save current position & size per click** | ✔️ **Yes** | ✔️ Yes | ❌ No |
-| **Windows 10 / 11 modern app support** | ✔️ **Full** (Chrome, Electron, VS Code) | ⚠️ Partial | ⚠️ Partial (DLL hook issues) |
-| **Admin rights required** | ❌ **No** | ❌ No | ⚠️ Yes |
-| **DLL Injection / AV False-Positives** | ❌ **None** | ❌ None | ⚠️ Uses Hook DLLs |
-| **Multi-Monitor intelligent placement** | ✔️ **Yes** | ✔️ Yes | ✔️ Yes |
-| **Invisible DWM border compensation** | ✔️ **Yes** | ⚠️ Partial | ❌ No |
-| **Portability** | ✔️ **1 File (1.2 MB)** | ✔️ Yes | ⚠️ Requires .NET Runtime |
 
 ---
 
 ## 📁 Repository Structure
 
 ```text
-├── SizerAlternative.exe   # Standalone compiled executable (ready-to-run)
-├── SizerAlternative.ahk   # Complete AutoHotkey v2 source code
-├── settings.ini           # Configuration file for presets and triggers
-├── app.ico                # Multi-resolution application & tray icon
-├── build.bat              # 1-click build script
-├── LICENSE                # MIT License
-├── README.md              # English documentation
-└── README.de.md           # German documentation
+├── RightPosition.exe   # Standalone compiled executable (ready-to-run)
+├── RightPosition.ahk   # Complete AutoHotkey v2 source code
+├── settings.ini        # Local configuration file for presets & triggers
+├── app.ico             # Multi-resolution application & tray icon
+├── build.bat           # 1-click build script
+├── LICENSE             # MIT License
+├── README.md           # English documentation (with comparison matrix)
+└── README.de.md        # German documentation (with comparison matrix)
 ```
 
 ---
@@ -156,4 +172,4 @@ Or run via PowerShell:
 ## 📄 License
 
 This project is open-source software licensed under the [MIT License](LICENSE).  
-Free for personal and commercial use.
+Free for personal and commercial use without restrictions.

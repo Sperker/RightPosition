@@ -3,7 +3,8 @@
 Persistent()
 
 ; ==============================================================================
-; SizerAlternative - Zukunftssicherer Sizer 4.0 Ersatz in AutoHotkey v2
+; RightPosition - Open-Source Fenster-Skalierung & Platzierung für Windows
+; (Zukunftssicherer, auditierbarer Sizer 4.0 Ersatz in AutoHotkey v2)
 ; ==============================================================================
 ; Features:
 ; - Aktuelle Fensterposition & Größe per Klick als Preset abspeichern
@@ -36,9 +37,9 @@ RegisterHotkeys() {
     global HotkeyStr
     if (HotkeyStr != "") {
         try {
-            Hotkey(HotkeyStr, (*) => ShowSizerMenu())
+            Hotkey(HotkeyStr, (*) => ShowRightPositionMenu())
         } catch as err {
-            MsgBox("Fehler beim Registrieren des Hotkeys '" HotkeyStr "':`n" err.Message, "SizerAlternative", "Icon!")
+            MsgBox("Fehler beim Registrieren des Hotkeys '" HotkeyStr "':`n" err.Message, "RightPosition", "Icon!")
         }
     }
 }
@@ -53,7 +54,7 @@ MButton:: {
     if mHwnd {
         try WinActivate(mHwnd)
         Sleep(40)
-        ShowSizerMenu(mHwnd)
+        ShowRightPositionMenu(mHwnd)
     }
 }
 #HotIf
@@ -65,7 +66,7 @@ MButton:: {
     if (mHwnd && mHwnd != WinExist("ahk_class Shell_TrayWnd")) {
         try WinActivate(mHwnd)
         Sleep(40)
-        ShowSizerMenu(mHwnd)
+        ShowRightPositionMenu(mHwnd)
     }
 }
 #HotIf
@@ -158,9 +159,9 @@ WritePresetsToIni() {
 }
 
 ; ------------------------------------------------------------------------------
-; Sizer Hauptmenü
+; RightPosition Hauptmenü
 ; ------------------------------------------------------------------------------
-ShowSizerMenu(targetHwnd := 0) {
+ShowRightPositionMenu(targetHwnd := 0) {
     hwnd := targetHwnd ? targetHwnd : WinExist("A")
     if (!hwnd || hwnd = WinExist("ahk_class Shell_TrayWnd") || hwnd = WinExist("ahk_class WorkerW")) {
         return
@@ -441,7 +442,7 @@ ShowToast(msg) {
 ; Tray Menü & Autostart
 ; ------------------------------------------------------------------------------
 SetupTrayMenu() {
-    A_IconTip := "SizerAlternative (" HotkeyStr ")"
+    A_IconTip := "RightPosition (" HotkeyStr ")"
 
     if FileExist(IconFile) {
         try TraySetIcon(IconFile)
@@ -449,8 +450,8 @@ SetupTrayMenu() {
 
     tray := A_TrayMenu
     tray.Delete()
-    tray.Add("Sizer Menü aufrufen (" HotkeyStr ")", (*) => ShowSizerMenu())
-    tray.Default := "Sizer Menü aufrufen (" HotkeyStr ")"
+    tray.Add("RightPosition Menü aufrufen (" HotkeyStr ")", (*) => ShowRightPositionMenu())
+    tray.Default := "RightPosition Menü aufrufen (" HotkeyStr ")"
     tray.Add()
     tray.Add("Einstellungen bearbeiten (INI)...", (*) => EditSettings())
     tray.Add("Neu laden", (*) => Reload())
@@ -471,7 +472,7 @@ EditSettings(*) {
 
 ToggleAutostart(item, *) {
     regKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
-    appName := "SizerAlternative"
+    appName := "RightPosition"
 
     if IsAutostartEnabled() {
         RegDelete(regKey, appName)
@@ -485,10 +486,11 @@ ToggleAutostart(item, *) {
 
 IsAutostartEnabled() {
     regKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
-    appName := "SizerAlternative"
+    appName := "RightPosition"
     try {
         val := RegRead(regKey, appName)
         return (val != "")
     }
     return false
 }
+

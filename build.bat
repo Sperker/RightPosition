@@ -3,7 +3,7 @@ setlocal
 cd /d "%~dp0"
 
 echo ===================================================
-echo Building SizerAlternative.exe
+echo Building RightPosition.exe
 echo ===================================================
 
 set "AHK2EXE="
@@ -26,16 +26,16 @@ if not defined BASE_AHK (
     exit /b 1
 )
 
-echo Stopping any running instance of SizerAlternative.exe...
-taskkill /F /IM SizerAlternative.exe >nul 2>&1
+echo Stopping any running instance of RightPosition.exe...
+taskkill /F /IM RightPosition.exe >nul 2>&1
 timeout /t 1 /nobreak >nul
 
-echo Compiling SizerAlternative.ahk into SizerAlternative.exe with app.ico...
-"%AHK2EXE%" /in "SizerAlternative.ahk" /out "SizerAlternative.exe" /icon "app.ico" /base "%BASE_AHK%" /silent
+echo Compiling RightPosition.ahk into RightPosition.exe with app.ico...
+"%AHK2EXE%" /in "RightPosition.ahk" /out "RightPosition.exe" /icon "app.ico" /base "%BASE_AHK%" /silent
 
 if %ERRORLEVEL% EQU 0 (
     echo.
-    echo [SUCCESS] SizerAlternative.exe built successfully!
+    echo [SUCCESS] RightPosition.exe built successfully!
     echo ===================================================
 ) else (
     echo.
