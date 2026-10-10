@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<smartContextMenu>
+  <menuItems>
+    <windowSizeItems>
+      <item title="640 x 480" width="640" height="480" />
+      <item title="800 x 600" width="800" height="600" />
+      <item title="1024 x 768" width="1024" height="768" />
+      <item title="1280 x 720 (HD)" width="1280" height="720" />
+      <item title="1366 x 768" width="1366" height="768" />
+      <item title="1600 x 900" width="1600" height="900" />
+      <item title="1920 x 1080 (Full HD)" width="1920" height="1080" />
+      <item title="2560 x 1440 (2K QHD)" width="2560" height="1440" />
+      <item title="3840 x 2160 (4K UHD)" width="3840" height="2160" />
+    </windowSizeItems>
+    <items>
+      <item type="group" name="size">
+        <items>
+          <item type="item" name="size_custom" key1="" key2="" key3="" />
+        </items>
+      </item>
+      <item type="separator" />
+      <item type="group" name="alignment" />
+    </items>
+  </menuItems>
+</smartContextMenu>

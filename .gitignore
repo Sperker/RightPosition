@@ -1,0 +1,20 @@
+# Log files
+*.log
+
+# Temporary and backup files
+*.tmp
+*.bak
+*~
+* - Kopie*
+* - Copy*
+Compile.txt
+
+# IDE & Editor folders
+.vscode/
+.idea/
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
