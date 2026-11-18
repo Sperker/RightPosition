@@ -8,6 +8,7 @@ Persistent()
 ; ==============================================================================
 ; Features:
 ; - Vollständige Lokalisierung (Deutsch & Englisch) mit automatischer Spracherkennung
+; - Eigener Dialog & Menüpunkt für Spracheinstellungen
 ; - Aktuelle Fensterposition & Größe per Klick als Preset abspeichern
 ; - Gespeicherte Presets per Klick wieder anwenden (Größe + Position)
 ; - Konfigurierbare Hotkeys & Shortcuts (über moderne Einstellungen-GUI oder INI)
@@ -30,6 +31,7 @@ global CompensateBorders := true
 global AppLang := "auto"
 global CurrentLang := "en"
 global SettingsGui := ""
+global LanguageGui := ""
 
 InitConfig()
 SetupTrayMenu()
@@ -103,6 +105,10 @@ T(key, p1 := "", p2 := "", p3 := "", p4 := "") {
         "menu_settings", Map(
             "de", "⌨️ Shortcut & Einstellungen ({1})...",
             "en", "⌨️ Shortcut & Settings ({1})..."
+        ),
+        "menu_language", Map(
+            "de", "🌐 Sprache / Language...",
+            "en", "🌐 Language / Sprache..."
         ),
         "menu_edit_ini", Map(
             "de", "⚙️ Einstellungen bearbeiten (INI)...",
@@ -240,13 +246,25 @@ T(key, p1 := "", p2 := "", p3 := "", p4 := "") {
             "de", "Programm automatisch mit Windows starten",
             "en", "Start program automatically with Windows"
         ),
-        "grp_language", Map(
-            "de", "Sprache / Language",
-            "en", "Language / Sprache"
+        "gui_lang_title", Map(
+            "de", "RightPosition - Spracheinstellungen",
+            "en", "RightPosition - Language Settings"
+        ),
+        "grp_select_lang", Map(
+            "de", "Sprache auswählen / Select Language",
+            "en", "Select Language / Sprache auswählen"
+        ),
+        "lang_desc", Map(
+            "de", "Wählen Sie die gewünschte Sprache für Menüs, Dialoge und Hinweise aus:",
+            "en", "Select your preferred language for menus, dialogs, and notifications:"
         ),
         "lang_auto", Map(
-            "de", "Automatisch (Systemsprache)",
-            "en", "Automatic (System language)"
+            "de", "Automatisch (Windows-Systemsprache)",
+            "en", "Automatic (Windows system language)"
+        ),
+        "toast_lang_saved", Map(
+            "de", "Spracheinstellungen gespeichert (Deutsch aktiv)!",
+            "en", "Language settings saved (English active)!"
         ),
         "btn_save", Map(
             "de", "💾 Speichern & Aktivieren",
@@ -591,6 +609,7 @@ ShowRightPositionMenu(targetHwnd := 0) {
     friendlyHk := FormatHotkeyFriendly(HotkeyStr)
     m.Add() ; Trennlinie
     m.Add(T("menu_settings", friendlyHk), (*) => ShowSettingsGui())
+    m.Add(T("menu_language"), (*) => ShowLanguageGui())
     m.Add(T("menu_edit_ini"), (*) => EditSettings())
 
     ; Menü an der aktuellen Mausposition öffnen
@@ -798,6 +817,75 @@ ShowToast(msg) {
 }
 
 ; ------------------------------------------------------------------------------
+; Spracheinstellungen Dialog (Eigener GUI-Dialog)
+; ------------------------------------------------------------------------------
+CloseLanguageGui() {
+    global LanguageGui
+    if (LanguageGui is Gui) {
+        try LanguageGui.Destroy()
+        LanguageGui := ""
+    }
+}
+
+ShowLanguageGui(*) {
+    global LanguageGui, AppLang, CurrentLang, IniFile, IconFile
+
+    ; Falls bereits geöffnet und aktiv, in den Vordergrund bringen
+    if (LanguageGui is Gui) {
+        try {
+            if WinExist("ahk_id " LanguageGui.Hwnd) {
+                LanguageGui.Show()
+                WinActivate("ahk_id " LanguageGui.Hwnd)
+                return
+            }
+        } catch {
+            LanguageGui := ""
+        }
+    }
+
+    DetectLanguage()
+
+    LanguageGui := Gui("+AlwaysOnTop -MinimizeBox", T("gui_lang_title"))
+    LanguageGui.SetFont("s9", "Segoe UI")
+
+    if FileExist(IconFile) {
+        try {
+            hIcon := DllCall("LoadImage", "Ptr", 0, "Str", IconFile, "UInt", 1, "Int", 32, "Int", 32, "UInt", 0x10, "Ptr")
+            if hIcon
+                DllCall("SendMessage", "Ptr", LanguageGui.Hwnd, "UInt", 0x80, "Ptr", 1, "Ptr", hIcon)
+        }
+    }
+
+    LanguageGui.Add("GroupBox", "x15 y10 w380 h140", T("grp_select_lang"))
+    LanguageGui.Add("Text", "x30 yp+25 w350", T("lang_desc"))
+
+    radAuto := LanguageGui.Add("Radio", "x30 y+12 Checked" (AppLang = "auto"), T("lang_auto"))
+    radDe := LanguageGui.Add("Radio", "x30 y+8 Checked" (AppLang = "de"), "Deutsch (German)")
+    radEn := LanguageGui.Add("Radio", "x30 y+8 Checked" (AppLang = "en"), "English")
+
+    btnSave := LanguageGui.Add("Button", "x15 y+25 w140 h34 Default", T("btn_save"))
+    btnCancel := LanguageGui.Add("Button", "x+10 yp w100 h34", T("btn_cancel"))
+
+    btnCancel.OnEvent("Click", (*) => CloseLanguageGui())
+    LanguageGui.OnEvent("Escape", (*) => CloseLanguageGui())
+    LanguageGui.OnEvent("Close", (*) => CloseLanguageGui())
+
+    btnSave.OnEvent("Click", (*) => OnSaveLang())
+    OnSaveLang() {
+        newLang := radDe.Value ? "de" : (radEn.Value ? "en" : "auto")
+        AppLang := newLang
+        try IniWrite(AppLang, IniFile, "Settings", "Language")
+        DetectLanguage()
+        SetupTrayMenu()
+        msg := T("toast_lang_saved")
+        CloseLanguageGui()
+        ShowToast(msg)
+    }
+
+    LanguageGui.Show("w410")
+}
+
+; ------------------------------------------------------------------------------
 ; Einstellungen & Shortcut Dialog (GUI)
 ; ------------------------------------------------------------------------------
 CloseSettingsGui() {
@@ -809,7 +897,7 @@ CloseSettingsGui() {
 }
 
 ShowSettingsGui(*) {
-    global SettingsGui, HotkeyStr, MiddleClickTitleBar, CtrlRightClick, CompensateBorders, IniFile, IconFile, AppLang, CurrentLang
+    global SettingsGui, HotkeyStr, MiddleClickTitleBar, CtrlRightClick, CompensateBorders, IniFile, IconFile, CurrentLang
 
     ; Falls bereits geöffnet und aktiv, in den Vordergrund bringen
     if (SettingsGui is Gui) {
@@ -892,18 +980,6 @@ ShowSettingsGui(*) {
     SettingsGui.Add("GroupBox", "x15 y+20 w480 h80", T("grp_behavior"))
     chkComp := SettingsGui.Add("Checkbox", "x30 yp+25 Checked" CompensateBorders, T("chk_compensate"))
     chkAuto := SettingsGui.Add("Checkbox", "x30 y+8 Checked" IsAutostartEnabled(), T("chk_autostart"))
-
-    ; --------------------------------------------------------------------------
-    ; Bereich 4: Sprache / Language
-    ; --------------------------------------------------------------------------
-    SettingsGui.Add("GroupBox", "x15 y+20 w480 h55", T("grp_language"))
-    langChoices := [
-        T("lang_auto"),
-        "Deutsch (German)",
-        "English"
-    ]
-    curLangIdx := (AppLang = "de") ? 2 : (AppLang = "en" ? 3 : 1)
-    cbLang := SettingsGui.Add("DropDownList", "x30 yp+20 w280 Choose" curLangIdx, langChoices)
 
     ; --------------------------------------------------------------------------
     ; Buttons
@@ -1011,12 +1087,6 @@ ShowSettingsGui(*) {
         try IniWrite(CtrlRightClick ? "1" : "0", IniFile, "Settings", "CtrlRightClick")
         try IniWrite(CompensateBorders ? "1" : "0", IniFile, "Settings", "CompensateBorders")
 
-        ; Spracheinstellung speichern
-        newAppLang := (cbLang.Value = 2) ? "de" : (cbLang.Value = 3 ? "en" : "auto")
-        AppLang := newAppLang
-        try IniWrite(AppLang, IniFile, "Settings", "Language")
-        DetectLanguage()
-
         ; Autostart
         if (chkAuto.Value != IsAutostartEnabled()) {
             ToggleAutostart()
@@ -1049,6 +1119,7 @@ SetupTrayMenu() {
     tray.Default := T("tray_open", friendlyHk)
     tray.Add()
     tray.Add(T("tray_settings"), (*) => ShowSettingsGui())
+    tray.Add(T("menu_language"), (*) => ShowLanguageGui())
     tray.Add(T("menu_edit_ini"), (*) => EditSettings())
     tray.Add(T("tray_reload"), (*) => Reload())
     tray.Add(T("tray_autostart"), ToggleAutostart)

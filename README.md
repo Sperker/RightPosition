@@ -40,6 +40,7 @@ Many developers, screencasters, QA engineers, and power users rely on window man
 | **1-Click Capture Size & Position** | ✔️ **Yes** | ✔️ Yes | ❌ No | ❌ No | ❌ No |
 | **Restore Exact Pixel Dimensions** | ✔️ **Yes** | ✔️ Yes | ✔️ Yes (Size only) | ❌ No (Grid-bound) | ❌ No (Grid-bound) |
 | **Free Floating Placement (X, Y)** | ✔️ **Yes** | ✔️ Yes | ❌ No (Predefined) | ❌ No (Tiled) | ❌ No (Tiled) |
+| **Dedicated Language Dialog (EN & DE)** | ✔️ **Yes (Auto-detect)** | ❌ English only | ⚠️ Partial | ✔️ Yes | ✔️ Yes |
 | **Interactive Shortcut Configurator (GUI)** | ✔️ **Yes (Live)** | ⚠️ INI only | ⚠️ Settings | ⚠️ Complex | ❌ Fixed (`Win+Z`) |
 | **Auditable Open-Source Code** | ✔️ **100% (MIT)** | ❌ Closed Source | ✔️ Open Source | ✔️ Open Source | ❌ Closed Source |
 | **No Admin Rights Required** | ✔️ **Yes** | ✔️ Yes | ⚠️ Needs Admin | ⚠️ Setup / Elevated | ✔️ Native |
@@ -56,7 +57,8 @@ Many developers, screencasters, QA engineers, and power users rely on window man
 
 - **💾 1-Click Geometry Capture**: With a single click on any window, capture its visible width, height, and relative X/Y coordinates on its monitor, and save it as a named preset.
 - **⭐ Instant Preset Restoration**: Presets appear directly at the top of the menu (`⭐`). Clicking a preset instantly snaps the window back to that exact size and position.
-- **⌨️ Customizable Shortcut (Interactive GUI)**: Change your hotkey anytime directly from the application menu or system tray without editing configuration files or restarting. Choose from popular presets (`Ctrl+Win+Z`, `Ctrl+Alt+Z`, `Win+Z`, `Ctrl+Alt+S`, etc.) or combine arbitrary modifier keys and buttons with instant live validation.
+- **🌐 Full Localization (English & German)**: Built-in automatic language detection based on your Windows system locale, plus a dedicated **Language Settings dialog** to switch anytime between Automatic, German, and English.
+- **⌨️ Customizable Shortcut (Interactive GUI)**: Change your hotkey anytime directly from the application menu or system tray without editing configuration files or restarting. Choose from popular presets (`Ctrl+Win+Z`, `Ctrl+Alt+Z`, `Win+Z`, `Ctrl+Alt+S`, etc.) or combine arbitrary modifier keys with instant live validation.
 - **🖥️ Multi-Monitor Awareness**: Windows stay anchored to the display they currently reside on via Win32 `MonitorFromWindow`.
 - **🪟 Windows 10/11 DWM Border Compensation**: Automatically accounts for invisible DWM drop shadows (~7–8 px) using `DwmGetWindowAttribute` to guarantee exact outer boundaries.
 - **🖱️ Versatile, Non-Intrusive Triggers**:
@@ -79,24 +81,35 @@ Many developers, screencasters, QA engineers, and power users rely on window man
    - **Middle-click** the window title bar, **OR**
    - Press **<kbd>Ctrl</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>** (or your customized hotkey), **OR**
    - Press **<kbd>Ctrl</kbd> + Right-Click** on the window.
-5. Select **`💾 Aktuelle Position & Größe speichern...`**, give it a name, and press <kbd>Enter</kbd>.
+5. Select **`💾 Save Current Position & Size...`**, give it a name, and press <kbd>Enter</kbd>.
 6. The preset is now permanently available at the top of the menu!
+
+---
+
+## 🌐 Language Settings
+
+RightPosition includes a dedicated language dialog:
+1. Open the window menu or right-click the system tray icon.
+2. Click **`🌐 Language / Sprache...`**.
+3. Choose:
+   - **Automatic (Windows system language)**: Defaults to German on German Windows systems, English everywhere else.
+   - **Deutsch (German)**
+   - **English**
+4. Click **`💾 Save & Apply`**. All menus, dialogs, and notifications switch immediately!
 
 ---
 
 ## ⌨️ Customizing the Shortcut & Trigger Options
 
-You can customize your shortcut and trigger options anytime in two ways:
-
 ### 1. Via the Built-in GUI (Recommended)
 1. Right-click the **RightPosition system tray icon** or open the window menu.
-2. Click **`⌨️ Shortcut & Einstellungen...`**.
+2. Click **`⌨️ Shortcut & Settings...`**.
 3. In the settings dialog:
-   - Choose a quick preset (e.g. `Ctrl + Alt + Z`, `Win + Z`, `Ctrl + Alt + S`, `Alt + Space`, `Ctrl + F12`) or freely check the modifier boxes (**Strg**, **Win**, **Alt**, **Shift**) and select/type any key.
+   - Choose a quick preset (e.g. `Ctrl + Alt + Z`, `Win + Z`, `Ctrl + Alt + S`, `Alt + Space`, `Ctrl + F12`) or freely check the modifier boxes (**Strg/Ctrl**, **Win**, **Alt**, **Shift**) and select/type any key.
    - Preview your shortcut in real time.
    - Enable or disable mouse triggers (middle-click title bar, Ctrl+Right-click).
    - Toggle Windows 10/11 shadow border compensation and auto-start with Windows.
-4. Click **`💾 Speichern & Aktivieren`**. The new shortcut is validated and active immediately without restarting!
+4. Click **`💾 Save & Apply`**. The new shortcut is validated and active immediately without restarting!
 
 ### 2. Via `settings.ini`
 Advanced users can also edit [`settings.ini`](settings.ini) directly:
@@ -104,6 +117,9 @@ Advanced users can also edit [`settings.ini`](settings.ini) directly:
 [Settings]
 ; Hotkey (^ = Ctrl, # = Win, ! = Alt, + = Shift)
 Hotkey=^#z
+
+; Language: auto, de, en
+Language=auto
 ```
 
 ---
@@ -112,25 +128,26 @@ Hotkey=^#z
 
 ```text
 ┌────────────────────────────────────────────────────────┐
-│ Aktuell: 1440 × 900  [Pos: 120, 80]  (Kopieren)        │  <- Click to copy dimensions
+│ Current: 1440 × 900  [Pos: 120, 80]  (Copy)            │  <- Click to copy dimensions
 ├────────────────────────────────────────────────────────┤
-│ 💾 Aktuelle Position & Größe speichern...              │  <- 1-click preset save
+│ 💾 Save current position & size...                     │  <- 1-click preset save
 ├────────────────────────────────────────────────────────┤
-│ ⭐ Mein Arbeits-Layout (1440 × 900 @ 120, 80)          │  <- Saved custom layouts
-│ ⭐ Split Screen Links (960 × 1040 @ 0, 0)              │
+│ ⭐ Work Layout (1440 × 900 @ 120, 80)                  │  <- Saved custom layouts
+│ ⭐ Split Screen Left (960 × 1040 @ 0, 0)               │
 ├────────────────────────────────────────────────────────┤
-│ 1920 x 1080 (Full HD, Zentriert)                       │  <- Standard presets
-│ 1600 x 900 (HD+, Zentriert)                            │
-│ 1280 x 720 (HD 720p, Zentriert)                        │
-│ 1024 x 768 (XGA, Zentriert)                            │
-│ 800 x 600 (SVGA, Zentriert)                            │
+│ 1920 x 1080 (Full HD, Centered)                        │  <- Standard presets
+│ 1600 x 900 (HD+, Centered)                             │
+│ 1280 x 720 (HD 720p, Centered)                         │
+│ 1024 x 768 (XGA, Centered)                             │
+│ 800 x 600 (SVGA, Centered)                             │
 ├────────────────────────────────────────────────────────┤
-│ 📐 Benutzerdefinierte Größe...                         │  <- Custom size prompt
-│ 📍 Positionieren                                    ▶ │  <- Center, Top-Left, etc.
-│ 🗑️ Preset löschen                                   ▶ │  <- 1-click preset removal
+│ 📐 Custom window size...                               │  <- Custom size prompt
+│ 📍 Position window                                  ▶ │  <- Center, Top-Left, etc.
+│ 🗑️ Delete preset                                    ▶ │  <- 1-click preset removal
 ├────────────────────────────────────────────────────────┤
-│ ⌨️ Shortcut & Einstellungen (Strg + Win + Z)...        │  <- Interactive shortcut GUI
-│ ⚙️ Einstellungen bearbeiten (INI)...                   │  <- Opens settings.ini
+│ ⌨️ Shortcut & Settings (Ctrl + Win + Z)...             │  <- Interactive shortcut GUI
+│ 🌐 Language / Sprache...                               │  <- Dedicated language dialog
+│ ⚙️ Edit settings (INI)...                              │  <- Opens settings.ini
 └────────────────────────────────────────────────────────┘
 ```
 
@@ -142,6 +159,9 @@ Hotkey=^#z
 [Settings]
 ; Hotkey (^ = Ctrl, # = Win, ! = Alt, + = Shift)
 Hotkey=^#z
+
+; Language: auto, de, en
+Language=auto
 
 ; Middle-click title bar trigger (1 = On, 0 = Off)
 MiddleClickTitleBar=1
@@ -155,9 +175,9 @@ CompensateBorders=1
 [Presets]
 ; Format: Name|Width|Height|Mode|RelX|RelY
 ; Modes: fixed, center, topleft, topright, bottomleft, bottomright
-Item1=1920 x 1080 (Full HD, Zentriert)|1920|1080|center|0|0
-Item2=1600 x 900 (HD+, Zentriert)|1600|900|center|0|0
-Item3=1280 x 720 (HD 720p, Zentriert)|1280|720|center|0|0
+Item1=1920 x 1080 (Full HD, Centered)|1920|1080|center|0|0
+Item2=1600 x 900 (HD+, Centered)|1600|900|center|0|0
+Item3=1280 x 720 (HD 720p, Centered)|1280|720|center|0|0
 ```
 
 ---
