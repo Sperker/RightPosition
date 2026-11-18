@@ -7,11 +7,12 @@ Persistent()
 ; (Zukunftssicherer, auditierbarer Sizer 4.0 Ersatz in AutoHotkey v2)
 ; ==============================================================================
 ; Features:
+; - Vollständige Lokalisierung (Deutsch & Englisch) mit automatischer Spracherkennung
 ; - Aktuelle Fensterposition & Größe per Klick als Preset abspeichern
 ; - Gespeicherte Presets per Klick wieder anwenden (Größe + Position)
 ; - Konfigurierbare Hotkeys & Shortcuts (über moderne Einstellungen-GUI oder INI)
 ; - Aufruf per:
-;     * Frei wählbarer Hotkey: Standardmäßig Strg + Win + Z
+;     * Frei wählbarer Hotkey: Standardmäßig Strg + Win + Z / Ctrl + Win + Z
 ;     * Mittelklick auf die Titelleiste des Fensters
 ;     * Strg + Rechtsklick auf beliebiges Fenster
 ; - Multi-Monitor-Unterstützung (bleibt auf dem aktuellen Monitor)
@@ -26,11 +27,272 @@ global HotkeyStr := "^#z"
 global MiddleClickTitleBar := true
 global CtrlRightClick := true
 global CompensateBorders := true
+global AppLang := "auto"
+global CurrentLang := "en"
 global SettingsGui := ""
 
 InitConfig()
 SetupTrayMenu()
 RegisterHotkeys()
+
+; ------------------------------------------------------------------------------
+; Spracherkennung & Übersetzungen (i18n: Deutsch & Englisch)
+; ------------------------------------------------------------------------------
+DetectLanguage() {
+    global AppLang, CurrentLang
+    if (AppLang = "de" || AppLang = "en") {
+        CurrentLang := AppLang
+        return
+    }
+    ; Automatische Erkennung anhand der Windows-Systemsprache (0x07 = Deutsch)
+    try {
+        isGerman := (SubStr(A_Language, -2) = "07")
+        CurrentLang := isGerman ? "de" : "en"
+    } catch {
+        CurrentLang := "en"
+    }
+}
+
+T(key, p1 := "", p2 := "", p3 := "", p4 := "") {
+    global CurrentLang
+    static dict := Map(
+        "cur_info", Map(
+            "de", "Aktuell: {1} × {2}  [Pos: {3}, {4}]  (Kopieren)",
+            "en", "Current: {1} × {2}  [Pos: {3}, {4}]  (Copy)"
+        ),
+        "toast_copied", Map(
+            "de", "Maße in die Zwischenablage kopiert!",
+            "en", "Dimensions copied to clipboard!"
+        ),
+        "menu_save_preset", Map(
+            "de", "💾 Aktuelle Position & Größe speichern...",
+            "en", "💾 Save current position & size..."
+        ),
+        "menu_custom_size", Map(
+            "de", "📐 Benutzerdefinierte Größe...",
+            "en", "📐 Custom window size..."
+        ),
+        "menu_position", Map(
+            "de", "📍 Positionieren",
+            "en", "📍 Position window"
+        ),
+        "pos_center", Map(
+            "de", "Fenster zentrieren",
+            "en", "Center window"
+        ),
+        "pos_topleft", Map(
+            "de", "Oben links",
+            "en", "Top left"
+        ),
+        "pos_topright", Map(
+            "de", "Oben rechts",
+            "en", "Top right"
+        ),
+        "pos_bottomleft", Map(
+            "de", "Unten links",
+            "en", "Bottom left"
+        ),
+        "pos_bottomright", Map(
+            "de", "Unten rechts",
+            "en", "Bottom right"
+        ),
+        "menu_del_preset", Map(
+            "de", "🗑️ Preset löschen",
+            "en", "🗑️ Delete preset"
+        ),
+        "menu_settings", Map(
+            "de", "⌨️ Shortcut & Einstellungen ({1})...",
+            "en", "⌨️ Shortcut & Settings ({1})..."
+        ),
+        "menu_edit_ini", Map(
+            "de", "⚙️ Einstellungen bearbeiten (INI)...",
+            "en", "⚙️ Edit settings (INI)..."
+        ),
+        "save_dlg_title", Map(
+            "de", "Aktuelle Position & Größe speichern",
+            "en", "Save Current Position & Size"
+        ),
+        "save_dlg_prompt", Map(
+            "de", "Geben Sie einen Namen für das neue Preset ein:`n`n• Breite: {1} px`n• Höhe: {2} px`n• Position X: {3} px (relativ zum Monitor)`n• Position Y: {4} px (relativ zum Monitor)",
+            "en", "Enter a name for the new preset:`n`n• Width: {1} px`n• Height: {2} px`n• Position X: {3} px (relative to monitor)`n• Position Y: {4} px (relative to monitor)"
+        ),
+        "toast_preset_saved", Map(
+            "de", "Preset '{1}' gespeichert!",
+            "en", "Preset '{1}' saved!"
+        ),
+        "del_dlg_title", Map(
+            "de", "Preset löschen",
+            "en", "Delete Preset"
+        ),
+        "del_dlg_prompt", Map(
+            "de", "Möchten Sie das Preset '{1}' wirklich löschen?",
+            "en", "Are you sure you want to delete preset '{1}'?"
+        ),
+        "toast_preset_deleted", Map(
+            "de", "Preset gelöscht!",
+            "en", "Preset deleted!"
+        ),
+        "custom_dlg_title", Map(
+            "de", "Benutzerdefinierte Größe",
+            "en", "Custom Window Size"
+        ),
+        "custom_dlg_prompt", Map(
+            "de", "Breite und Höhe eingeben (z. B. 1280x720 oder 1280 720):",
+            "en", "Enter width and height (e.g. 1280x720 or 1280 720):"
+        ),
+        "custom_dlg_invalid", Map(
+            "de", "Ungültiges Format. Bitte z. B. '1280 x 720' eingeben.",
+            "en", "Invalid format. Please enter e.g. '1280 x 720'."
+        ),
+        "tray_open", Map(
+            "de", "RightPosition Menü aufrufen ({1})",
+            "en", "Open RightPosition menu ({1})"
+        ),
+        "tray_settings", Map(
+            "de", "⌨️ Shortcut & Einstellungen...",
+            "en", "⌨️ Shortcut & Settings..."
+        ),
+        "tray_reload", Map(
+            "de", "Neu laden",
+            "en", "Reload"
+        ),
+        "tray_autostart", Map(
+            "de", "Mit Windows starten",
+            "en", "Start with Windows"
+        ),
+        "tray_exit", Map(
+            "de", "Beenden",
+            "en", "Exit"
+        ),
+        "gui_title", Map(
+            "de", "RightPosition - Shortcut & Einstellungen",
+            "en", "RightPosition - Shortcut & Settings"
+        ),
+        "grp_shortcut", Map(
+            "de", "Tastatur-Shortcut (Menü aufrufen)",
+            "en", "Keyboard Shortcut (Open menu)"
+        ),
+        "lbl_preset_quick", Map(
+            "de", "Schnellauswahl beliebter Tastenkombinationen:",
+            "en", "Quick select popular shortcuts:"
+        ),
+        "preset_default", Map(
+            "de", "Strg + Win + Z (Standard / Sizer)",
+            "en", "Ctrl + Win + Z (Default / Sizer)"
+        ),
+        "preset_custom", Map(
+            "de", "Benutzerdefiniert...",
+            "en", "Custom..."
+        ),
+        "lbl_modifiers", Map(
+            "de", "Zusatztasten (Modifikatoren):",
+            "en", "Modifier keys:"
+        ),
+        "chk_ctrl", Map(
+            "de", "Strg (Ctrl)",
+            "en", "Ctrl"
+        ),
+        "chk_win", Map(
+            "de", "Windows (Win)",
+            "en", "Windows (Win)"
+        ),
+        "chk_alt", Map(
+            "de", "Alt",
+            "en", "Alt"
+        ),
+        "chk_shift", Map(
+            "de", "Umschalt (Shift)",
+            "en", "Shift"
+        ),
+        "lbl_key", Map(
+            "de", "Taste:",
+            "en", "Key:"
+        ),
+        "lbl_active", Map(
+            "de", "Aktiv: ",
+            "en", "Active: "
+        ),
+        "lbl_preview", Map(
+            "de", "Vorschau: ",
+            "en", "Preview: "
+        ),
+        "grp_mouse", Map(
+            "de", "Maus-Auslöser",
+            "en", "Mouse Triggers"
+        ),
+        "chk_mouse_middle", Map(
+            "de", "Menü per Mittelklick auf Fenstertitelleiste öffnen",
+            "en", "Open menu via middle-click on window title bar"
+        ),
+        "chk_mouse_ctrl_right", Map(
+            "de", "Menü per Strg + Rechtsklick auf beliebiges Fenster öffnen",
+            "en", "Open menu via Ctrl + Right-click on any window"
+        ),
+        "grp_behavior", Map(
+            "de", "Fenster-Verhalten & System",
+            "en", "Window Behavior & System"
+        ),
+        "chk_compensate", Map(
+            "de", "Unsichtbare Windows 10/11 Schattenränder ausgleichen (pixelgenau)",
+            "en", "Compensate invisible Windows 10/11 shadow borders (pixel-exact)"
+        ),
+        "chk_autostart", Map(
+            "de", "Programm automatisch mit Windows starten",
+            "en", "Start program automatically with Windows"
+        ),
+        "grp_language", Map(
+            "de", "Sprache / Language",
+            "en", "Language / Sprache"
+        ),
+        "lang_auto", Map(
+            "de", "Automatisch (Systemsprache)",
+            "en", "Automatic (System language)"
+        ),
+        "btn_save", Map(
+            "de", "💾 Speichern & Aktivieren",
+            "en", "💾 Save & Apply"
+        ),
+        "btn_cancel", Map(
+            "de", "Abbrechen",
+            "en", "Cancel"
+        ),
+        "btn_reset", Map(
+            "de", "Standard (Strg + Win + Z)",
+            "en", "Default (Ctrl + Win + Z)"
+        ),
+        "err_no_key", Map(
+            "de", "Bitte geben Sie eine Taste ein oder wählen Sie eine aus der Liste.",
+            "en", "Please enter a key or select one from the list."
+        ),
+        "warn_single_key", Map(
+            "de", "Sie haben keine Zusatztaste (Strg, Win, Alt, Shift) ausgewählt.`n`nEine Einzeltaste wie '{1}' würde die normale Eingabe dieser Taste in allen Programmen blockieren!`n`nMöchten Sie wirklich fortfahren?",
+            "en", "You haven't selected any modifier keys (Ctrl, Win, Alt, Shift).`n`nA single key like '{1}' will block normal typing of that key across all applications!`n`nAre you sure you want to proceed?"
+        ),
+        "err_hotkey_failed", Map(
+            "de", "Der Shortcut '{1}' konnte nicht aktiviert werden:`n`n{2}`n`nMöglicherweise ist dieser Shortcut bereits vom System oder einem anderen Programm belegt.",
+            "en", "The shortcut '{1}' could not be registered:`n`n{2}`n`nIt may already be reserved by Windows or another running application."
+        ),
+        "toast_settings_saved", Map(
+            "de", "Einstellungen & Shortcut ({1}) gespeichert!",
+            "en", "Settings & Shortcut ({1}) saved!"
+        )
+    )
+
+    if !dict.Has(key)
+        return key
+
+    subMap := dict[key]
+    str := subMap.Has(CurrentLang) ? subMap[CurrentLang] : subMap["en"]
+    if (p1 != "")
+        str := StrReplace(str, "{1}", p1)
+    if (p2 != "")
+        str := StrReplace(str, "{2}", p2)
+    if (p3 != "")
+        str := StrReplace(str, "{3}", p3)
+    if (p4 != "")
+        str := StrReplace(str, "{4}", p4)
+    return str
+}
 
 ; ------------------------------------------------------------------------------
 ; Hotkeys registrieren & verwalten
@@ -41,7 +303,7 @@ RegisterHotkeys() {
         try {
             Hotkey(HotkeyStr, (*) => ShowRightPositionMenu(), "On")
         } catch as err {
-            MsgBox("Fehler beim Registrieren des Hotkeys '" FormatHotkeyFriendly(HotkeyStr) "' (" HotkeyStr "):`n" err.Message, "RightPosition", "Icon!")
+            MsgBox(T("err_hotkey_failed", FormatHotkeyFriendly(HotkeyStr), err.Message), "RightPosition", "Icon!")
         }
     }
 }
@@ -55,7 +317,7 @@ UpdateHotkey(newHk) {
     try {
         Hotkey(newHk, (*) => ShowRightPositionMenu(), "On")
     } catch as err {
-        MsgBox("Der Shortcut '" FormatHotkeyFriendly(newHk) "' konnte nicht aktiviert werden:`n`n" err.Message "`n`nMöglicherweise ist dieser Shortcut bereits vom System oder einem anderen Programm belegt.", "RightPosition", "Icon!")
+        MsgBox(T("err_hotkey_failed", FormatHotkeyFriendly(newHk), err.Message), "RightPosition", "Icon!")
         return false
     }
 
@@ -73,12 +335,15 @@ UpdateHotkey(newHk) {
 ; ------------------------------------------------------------------------------
 ; Formatierung & Parser für lesbare Hotkeys
 ; ------------------------------------------------------------------------------
-FormatHotkeyFriendly(hk) {
+FormatHotkeyFriendly(hk, lang := "") {
+    global CurrentLang
+    useEn := (lang = "en" || (lang = "" && CurrentLang = "en"))
     if (hk = "")
-        return "Keiner"
+        return useEn ? "None" : "Keiner"
+    
     str := ""
     if InStr(hk, "^")
-        str .= "Strg + "
+        str .= useEn ? "Ctrl + " : "Strg + "
     if InStr(hk, "#")
         str .= "Win + "
     if InStr(hk, "!")
@@ -88,20 +353,20 @@ FormatHotkeyFriendly(hk) {
     
     keyPart := RegExReplace(hk, "[\^#!+]")
     switch StrLower(keyPart) {
-        case "space": keyPart := "Leertaste"
-        case "enter": keyPart := "Eingabetaste"
+        case "space": keyPart := useEn ? "Space" : "Leertaste"
+        case "enter": keyPart := useEn ? "Enter" : "Eingabetaste"
         case "tab": keyPart := "Tab"
         case "esc": keyPart := "Escape"
-        case "delete", "del": keyPart := "Entf"
-        case "insert", "ins": keyPart := "Einfg"
-        case "home": keyPart := "Pos1"
-        case "end": keyPart := "Ende"
-        case "pgup": keyPart := "BildAuf"
-        case "pgdn": keyPart := "BildAb"
-        case "up": keyPart := "Pfeil Oben"
-        case "down": keyPart := "Pfeil Unten"
-        case "left": keyPart := "Pfeil Links"
-        case "right": keyPart := "Pfeil Rechts"
+        case "delete", "del": keyPart := useEn ? "Delete" : "Entf"
+        case "insert", "ins": keyPart := useEn ? "Insert" : "Einfg"
+        case "home": keyPart := useEn ? "Home" : "Pos1"
+        case "end": keyPart := useEn ? "End" : "Ende"
+        case "pgup": keyPart := useEn ? "PageUp" : "BildAuf"
+        case "pgdn": keyPart := useEn ? "PageDown" : "BildAb"
+        case "up": keyPart := useEn ? "Arrow Up" : "Pfeil Oben"
+        case "down": keyPart := useEn ? "Arrow Down" : "Pfeil Unten"
+        case "left": keyPart := useEn ? "Arrow Left" : "Pfeil Links"
+        case "right": keyPart := useEn ? "Arrow Right" : "Pfeil Rechts"
         default: keyPart := StrUpper(keyPart)
     }
     return str keyPart
@@ -166,7 +431,7 @@ MouseIsOverTitleBar() {
 ; Konfiguration laden & verwalten
 ; ------------------------------------------------------------------------------
 InitConfig() {
-    global Presets, HotkeyStr, MiddleClickTitleBar, CtrlRightClick, CompensateBorders
+    global Presets, HotkeyStr, MiddleClickTitleBar, CtrlRightClick, CompensateBorders, AppLang
 
     if !FileExist(IniFile) {
         CreateDefaultIni()
@@ -176,6 +441,9 @@ InitConfig() {
     try MiddleClickTitleBar := (IniRead(IniFile, "Settings", "MiddleClickTitleBar", "1") = "1")
     try CtrlRightClick := (IniRead(IniFile, "Settings", "CtrlRightClick", "1") = "1")
     try CompensateBorders := (IniRead(IniFile, "Settings", "CompensateBorders", "1") = "1")
+    try AppLang := IniRead(IniFile, "Settings", "Language", "auto")
+
+    DetectLanguage()
 
     Presets := []
     try {
@@ -206,28 +474,41 @@ InitConfig() {
 }
 
 CreateDefaultIni() {
+    global CurrentLang
+    DetectLanguage()
+    isDe := (CurrentLang = "de")
+
+    n1 := isDe ? "1920 x 1080 (Full HD, Zentriert)" : "1920 x 1080 (Full HD, Centered)"
+    n2 := isDe ? "1600 x 900 (HD+, Zentriert)" : "1600 x 900 (HD+, Centered)"
+    n3 := isDe ? "1280 x 720 (HD 720p, Zentriert)" : "1280 x 720 (HD 720p, Centered)"
+    n4 := isDe ? "1024 x 768 (XGA, Zentriert)" : "1024 x 768 (XGA, Centered)"
+    n5 := isDe ? "800 x 600 (SVGA, Zentriert)" : "800 x 600 (SVGA, Centered)"
+
     defaultIni := 
     (
         "[Settings]`r`n"
-        "; Tastenkombination zum Öffnen des Menüs (^ = Strg, # = Win, ! = Alt, + = Umschalt)`r`n"
+        "; Hotkey (^ = Ctrl, # = Win, ! = Alt, + = Shift)`r`n"
         "Hotkey=^#z`r`n"
         "`r`n"
-        "; Menü per Mittelklick auf die Fenstertitelleiste öffnen (1 = Ein, 0 = Aus)`r`n"
+        "; Language: auto, de, en`r`n"
+        "Language=auto`r`n"
+        "`r`n"
+        "; MiddleClickTitleBar (1 = On, 0 = Off)`r`n"
         "MiddleClickTitleBar=1`r`n"
         "`r`n"
-        "; Menü per Strg + Rechtsklick auf ein beliebiges Fenster öffnen (1 = Ein, 0 = Aus)`r`n"
+        "; CtrlRightClick (1 = On, 0 = Off)`r`n"
         "CtrlRightClick=1`r`n"
         "`r`n"
-        "; Unsichtbare Fensterrahmen von Windows 10/11 ausgleichen (1 = Ja, 0 = Nein)`r`n"
+        "; CompensateBorders (1 = On, 0 = Off)`r`n"
         "CompensateBorders=1`r`n"
         "`r`n"
         "[Presets]`r`n"
-        "; Format: Name|Breite|Höhe|Modus|RelX|RelY`r`n"
-        "Item1=1920 x 1080 (Full HD, Zentriert)|1920|1080|center|0|0`r`n"
-        "Item2=1600 x 900 (HD+, Zentriert)|1600|900|center|0|0`r`n"
-        "Item3=1280 x 720 (HD 720p, Zentriert)|1280|720|center|0|0`r`n"
-        "Item4=1024 x 768 (XGA, Zentriert)|1024|768|center|0|0`r`n"
-        "Item5=800 x 600 (SVGA, Zentriert)|800|600|center|0|0`r`n"
+        "; Format: Name|Width|Height|Mode|RelX|RelY`r`n"
+        "Item1=" n1 "|1920|1080|center|0|0`r`n"
+        "Item2=" n2 "|1600|900|center|0|0`r`n"
+        "Item3=" n3 "|1280|720|center|0|0`r`n"
+        "Item4=" n4 "|1024|768|center|0|0`r`n"
+        "Item5=" n5 "|800|600|center|0|0`r`n"
     )
     try FileAppend(defaultIni, IniFile, "UTF-8")
 }
@@ -258,12 +539,12 @@ ShowRightPositionMenu(targetHwnd := 0) {
     m := Menu()
 
     ; Infozeile mit aktueller Größe und Position
-    curInfo := "Aktuell: " vw " × " vh "  [Pos: " relX ", " relY "]  (Kopieren)"
-    m.Add(curInfo, (*) => (A_Clipboard := vw " x " vh " @ " relX ", " relY, ShowToast("Maße in die Zwischenablage kopiert!")))
+    curInfo := T("cur_info", vw, vh, relX, relY)
+    m.Add(curInfo, (*) => (A_Clipboard := vw " x " vh " @ " relX ", " relY, ShowToast(T("toast_copied"))))
     m.Add() ; Trennlinie
 
     ; KILLER-FEATURE: Aktuelle Größe & Position als Preset speichern
-    m.Add("💾 Aktuelle Position & Größe speichern...", (*) => SaveCurrentAsPreset(hwnd))
+    m.Add(T("menu_save_preset"), (*) => SaveCurrentAsPreset(hwnd))
     m.Add() ; Trennlinie
 
     ; Gespeicherte / Benutzerdefinierte Presets (mit fester Position)
@@ -287,16 +568,16 @@ ShowRightPositionMenu(targetHwnd := 0) {
     }
 
     m.Add() ; Trennlinie
-    m.Add("📐 Benutzerdefinierte Größe...", (*) => PromptCustomSize(hwnd))
+    m.Add(T("menu_custom_size"), (*) => PromptCustomSize(hwnd))
 
     ; Submenü für Positionierung
     posMenu := Menu()
-    posMenu.Add("Fenster zentrieren", (*) => PositionTarget(hwnd, "center"))
-    posMenu.Add("Oben links", (*) => PositionTarget(hwnd, "topleft"))
-    posMenu.Add("Oben rechts", (*) => PositionTarget(hwnd, "topright"))
-    posMenu.Add("Unten links", (*) => PositionTarget(hwnd, "bottomleft"))
-    posMenu.Add("Unten rechts", (*) => PositionTarget(hwnd, "bottomright"))
-    m.Add("📍 Positionieren", posMenu)
+    posMenu.Add(T("pos_center"), (*) => PositionTarget(hwnd, "center"))
+    posMenu.Add(T("pos_topleft"), (*) => PositionTarget(hwnd, "topleft"))
+    posMenu.Add(T("pos_topright"), (*) => PositionTarget(hwnd, "topright"))
+    posMenu.Add(T("pos_bottomleft"), (*) => PositionTarget(hwnd, "bottomleft"))
+    posMenu.Add(T("pos_bottomright"), (*) => PositionTarget(hwnd, "bottomright"))
+    m.Add(T("menu_position"), posMenu)
 
     ; Submenü zum Löschen von Presets
     if (Presets.Length > 0) {
@@ -304,13 +585,13 @@ ShowRightPositionMenu(targetHwnd := 0) {
         for idx, pItem in Presets {
             delMenu.Add(pItem.title, ((delIdx, *) => DeletePresetByIndex(delIdx)).Bind(idx))
         }
-        m.Add("🗑️ Preset löschen", delMenu)
+        m.Add(T("menu_del_preset"), delMenu)
     }
 
     friendlyHk := FormatHotkeyFriendly(HotkeyStr)
     m.Add() ; Trennlinie
-    m.Add("⌨️ Shortcut & Einstellungen (" friendlyHk ")...", (*) => ShowSettingsGui())
-    m.Add("⚙️ Einstellungen bearbeiten (INI)...", (*) => EditSettings())
+    m.Add(T("menu_settings", friendlyHk), (*) => ShowSettingsGui())
+    m.Add(T("menu_edit_ini"), (*) => EditSettings())
 
     ; Menü an der aktuellen Mausposition öffnen
     m.Show()
@@ -332,16 +613,9 @@ SaveCurrentAsPreset(hwnd) {
     shortTitle := (winTitle != "") ? (SubStr(winTitle, 1, 22) " - ") : ""
     defaultName := shortTitle vw "x" vh " (Pos: " relX ", " relY ")"
 
-    promptText := 
-    (
-        "Geben Sie einen Namen für das neue Preset ein:`n`n"
-        "• Breite: " vw " px`n"
-        "• Höhe: " vh " px`n"
-        "• Position X: " relX " px (relativ zum Monitor)`n"
-        "• Position Y: " relY " px (relativ zum Monitor)"
-    )
+    promptText := T("save_dlg_prompt", vw, vh, relX, relY)
 
-    ib := InputBox(promptText, "Aktuelle Position & Größe speichern", "W380 H230", defaultName)
+    ib := InputBox(promptText, T("save_dlg_title"), "W380 H230", defaultName)
     if (ib.Result != "OK" || Trim(ib.Value) == "")
         return
 
@@ -352,7 +626,7 @@ SaveCurrentAsPreset(hwnd) {
     Presets.InsertAt(1, newEntry)
     WritePresetsToIni()
 
-    ShowToast("Preset '" newName "' gespeichert!")
+    ShowToast(T("toast_preset_saved", newName))
 }
 
 DeletePresetByIndex(index) {
@@ -360,11 +634,11 @@ DeletePresetByIndex(index) {
         return
 
     targetItem := Presets[index]
-    ans := MsgBox("Möchten Sie das Preset '" targetItem.title "' wirklich löschen?", "Preset löschen", "YesNo Icon?")
+    ans := MsgBox(T("del_dlg_prompt", targetItem.title), T("del_dlg_title"), "YesNo Icon?")
     if (ans == "Yes") {
         Presets.RemoveAt(index)
         WritePresetsToIni()
-        ShowToast("Preset gelöscht!")
+        ShowToast(T("toast_preset_deleted"))
     }
 }
 
@@ -444,7 +718,7 @@ PositionTarget(hwnd, posMode) {
 PromptCustomSize(hwnd) {
     GetVisibleWindowRect(hwnd, &vx, &vy, &curW, &curH)
 
-    ib := InputBox("Breite und Höhe eingeben (z. B. 1280x720 oder 1280 720):", "Benutzerdefinierte Größe", "W320 H130", curW " x " curH)
+    ib := InputBox(T("custom_dlg_prompt"), T("custom_dlg_title"), "W320 H130", curW " x " curH)
     if (ib.Result != "OK")
         return
 
@@ -458,7 +732,7 @@ PromptCustomSize(hwnd) {
             ResizeTarget(hwnd, newW, newH, "center")
         }
     } else {
-        MsgBox("Ungültiges Format. Bitte z. B. '1280 x 720' eingeben.", "RightPosition", "Icon!")
+        MsgBox(T("custom_dlg_invalid"), "RightPosition", "Icon!")
     }
 }
 
@@ -526,17 +800,33 @@ ShowToast(msg) {
 ; ------------------------------------------------------------------------------
 ; Einstellungen & Shortcut Dialog (GUI)
 ; ------------------------------------------------------------------------------
-ShowSettingsGui(*) {
-    global SettingsGui, HotkeyStr, MiddleClickTitleBar, CtrlRightClick, CompensateBorders, IniFile, IconFile
+CloseSettingsGui() {
+    global SettingsGui
+    if (SettingsGui is Gui) {
+        try SettingsGui.Destroy()
+        SettingsGui := ""
+    }
+}
 
-    ; Falls bereits geöffnet, in den Vordergrund bringen
-    if (SettingsGui is Gui && WinExist("ahk_id " SettingsGui.Hwnd)) {
-        SettingsGui.Show()
-        WinActivate("ahk_id " SettingsGui.Hwnd)
-        return
+ShowSettingsGui(*) {
+    global SettingsGui, HotkeyStr, MiddleClickTitleBar, CtrlRightClick, CompensateBorders, IniFile, IconFile, AppLang, CurrentLang
+
+    ; Falls bereits geöffnet und aktiv, in den Vordergrund bringen
+    if (SettingsGui is Gui) {
+        try {
+            if WinExist("ahk_id " SettingsGui.Hwnd) {
+                SettingsGui.Show()
+                WinActivate("ahk_id " SettingsGui.Hwnd)
+                return
+            }
+        } catch {
+            SettingsGui := ""
+        }
     }
 
-    SettingsGui := Gui("+AlwaysOnTop -MinimizeBox", "RightPosition - Shortcut & Einstellungen")
+    DetectLanguage()
+
+    SettingsGui := Gui("+AlwaysOnTop -MinimizeBox", T("gui_title"))
     SettingsGui.SetFont("s9", "Segoe UI")
 
     ; Fenster-Icon setzen falls app.ico vorhanden
@@ -553,28 +843,28 @@ ShowSettingsGui(*) {
     ; --------------------------------------------------------------------------
     ; Bereich 1: Tastatur-Shortcut
     ; --------------------------------------------------------------------------
-    SettingsGui.Add("GroupBox", "x15 y10 w480 h175", "Tastatur-Shortcut (Menü aufrufen)")
+    SettingsGui.Add("GroupBox", "x15 y10 w480 h175", T("grp_shortcut"))
 
-    SettingsGui.Add("Text", "x30 yp+25", "Schnellauswahl beliebter Tastenkombinationen:")
+    SettingsGui.Add("Text", "x30 yp+25", T("lbl_preset_quick"))
     presetChoices := [
-        "Strg + Win + Z (Standard / Sizer)",
-        "Strg + Alt + Z",
-        "Win + Z",
-        "Strg + Alt + S",
-        "Strg + Shift + Z",
-        "Alt + Leertaste",
-        "Strg + F12",
-        "Benutzerdefiniert..."
+        T("preset_default"),
+        FormatHotkeyFriendly("^!z") " (" (CurrentLang = "de" ? "Strg+Alt+Z" : "Ctrl+Alt+Z") ")",
+        FormatHotkeyFriendly("#z") " (" (CurrentLang = "de" ? "Win+Z" : "Win+Z") ")",
+        FormatHotkeyFriendly("^!s") " (" (CurrentLang = "de" ? "Strg+Alt+S" : "Ctrl+Alt+S") ")",
+        FormatHotkeyFriendly("^+z") " (" (CurrentLang = "de" ? "Strg+Shift+Z" : "Ctrl+Shift+Z") ")",
+        FormatHotkeyFriendly("!space") " (" (CurrentLang = "de" ? "Alt+Leertaste" : "Alt+Space") ")",
+        FormatHotkeyFriendly("^f12") " (" (CurrentLang = "de" ? "Strg+F12" : "Ctrl+F12") ")",
+        T("preset_custom")
     ]
     cbPreset := SettingsGui.Add("DropDownList", "x30 y+5 w280", presetChoices)
 
-    SettingsGui.Add("Text", "x30 y+12", "Zusatztasten (Modifikatoren):")
-    chkCtrl := SettingsGui.Add("Checkbox", "x30 y+5 Checked" curCtrl, "Strg (Ctrl)")
-    chkWin := SettingsGui.Add("Checkbox", "x+15 yp Checked" curWin, "Windows (Win)")
-    chkAlt := SettingsGui.Add("Checkbox", "x+15 yp Checked" curAlt, "Alt")
-    chkShift := SettingsGui.Add("Checkbox", "x+15 yp Checked" curShift, "Umschalt (Shift)")
+    SettingsGui.Add("Text", "x30 y+12", T("lbl_modifiers"))
+    chkCtrl := SettingsGui.Add("Checkbox", "x30 y+5 Checked" curCtrl, T("chk_ctrl"))
+    chkWin := SettingsGui.Add("Checkbox", "x+15 yp Checked" curWin, T("chk_win"))
+    chkAlt := SettingsGui.Add("Checkbox", "x+15 yp Checked" curAlt, T("chk_alt"))
+    chkShift := SettingsGui.Add("Checkbox", "x+15 yp Checked" curShift, T("chk_shift"))
 
-    SettingsGui.Add("Text", "x30 y+12", "Taste:")
+    SettingsGui.Add("Text", "x30 y+12", T("lbl_key"))
     keyList := [
         "A","B","C","D","E","F","G","H","I","J","K","L","M",
         "N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
@@ -586,29 +876,41 @@ ShowSettingsGui(*) {
     cbKey := SettingsGui.Add("ComboBox", "x75 yp-3 w110", keyList)
     cbKey.Text := curKey
 
-    txtPreview := SettingsGui.Add("Text", "x200 yp+3 w280 cBlue", "Aktiv: " FormatHotkeyFriendly(HotkeyStr))
+    txtPreview := SettingsGui.Add("Text", "x200 yp+3 w280 cBlue", T("lbl_active") FormatHotkeyFriendly(HotkeyStr))
     txtPreview.SetFont("s9 Bold")
 
     ; --------------------------------------------------------------------------
     ; Bereich 2: Maus-Trigger
     ; --------------------------------------------------------------------------
-    SettingsGui.Add("GroupBox", "x15 y+25 w480 h80", "Maus-Auslöser")
-    chkMiddle := SettingsGui.Add("Checkbox", "x30 yp+25 Checked" MiddleClickTitleBar, "Menü per Mittelklick auf Fenstertitelleiste öffnen")
-    chkCtrlRight := SettingsGui.Add("Checkbox", "x30 y+8 Checked" CtrlRightClick, "Menü per Strg + Rechtsklick auf beliebiges Fenster öffnen")
+    SettingsGui.Add("GroupBox", "x15 y+25 w480 h80", T("grp_mouse"))
+    chkMiddle := SettingsGui.Add("Checkbox", "x30 yp+25 Checked" MiddleClickTitleBar, T("chk_mouse_middle"))
+    chkCtrlRight := SettingsGui.Add("Checkbox", "x30 y+8 Checked" CtrlRightClick, T("chk_mouse_ctrl_right"))
 
     ; --------------------------------------------------------------------------
-    ; Bereich 3: Fenster-Verhalten & Autostart
+    ; Bereich 3: Fenster-Verhalten & System
     ; --------------------------------------------------------------------------
-    SettingsGui.Add("GroupBox", "x15 y+20 w480 h80", "Fenster-Verhalten & System")
-    chkComp := SettingsGui.Add("Checkbox", "x30 yp+25 Checked" CompensateBorders, "Unsichtbare Windows 10/11 Schattenränder ausgleichen (pixelgenau)")
-    chkAuto := SettingsGui.Add("Checkbox", "x30 y+8 Checked" IsAutostartEnabled(), "Programm automatisch mit Windows starten")
+    SettingsGui.Add("GroupBox", "x15 y+20 w480 h80", T("grp_behavior"))
+    chkComp := SettingsGui.Add("Checkbox", "x30 yp+25 Checked" CompensateBorders, T("chk_compensate"))
+    chkAuto := SettingsGui.Add("Checkbox", "x30 y+8 Checked" IsAutostartEnabled(), T("chk_autostart"))
+
+    ; --------------------------------------------------------------------------
+    ; Bereich 4: Sprache / Language
+    ; --------------------------------------------------------------------------
+    SettingsGui.Add("GroupBox", "x15 y+20 w480 h55", T("grp_language"))
+    langChoices := [
+        T("lang_auto"),
+        "Deutsch (German)",
+        "English"
+    ]
+    curLangIdx := (AppLang = "de") ? 2 : (AppLang = "en" ? 3 : 1)
+    cbLang := SettingsGui.Add("DropDownList", "x30 yp+20 w280 Choose" curLangIdx, langChoices)
 
     ; --------------------------------------------------------------------------
     ; Buttons
     ; --------------------------------------------------------------------------
-    btnSave := SettingsGui.Add("Button", "x15 y+25 w160 h34 Default", "💾 Speichern && Aktivieren")
-    btnCancel := SettingsGui.Add("Button", "x+10 yp w110 h34", "Abbrechen")
-    btnReset := SettingsGui.Add("Button", "x+10 yp w190 h34", "Standard (Strg + Win + Z)")
+    btnSave := SettingsGui.Add("Button", "x15 y+25 w160 h34 Default", T("btn_save"))
+    btnCancel := SettingsGui.Add("Button", "x+10 yp w110 h34", T("btn_cancel"))
+    btnReset := SettingsGui.Add("Button", "x+10 yp w190 h34", T("btn_reset"))
 
     ; Helper: Konstruiert Hotkey aus Checkboxen & Taste
     GetSelectedHotkey() {
@@ -619,7 +921,7 @@ ShowSettingsGui(*) {
 
     UpdatePreview() {
         hk := GetSelectedHotkey()
-        txtPreview.Text := "Vorschau: " FormatHotkeyFriendly(hk)
+        txtPreview.Text := T("lbl_preview") FormatHotkeyFriendly(hk)
     }
 
     SelectMatchingPreset() {
@@ -672,22 +974,22 @@ ShowSettingsGui(*) {
     UpdatePreview()
 
     btnReset.OnEvent("Click", (*) => (cbPreset.Choose(1), OnPresetChanged()))
-    btnCancel.OnEvent("Click", (*) => SettingsGui.Destroy())
-    SettingsGui.OnEvent("Escape", (*) => SettingsGui.Destroy())
-    SettingsGui.OnEvent("Close", (*) => SettingsGui.Destroy())
+    btnCancel.OnEvent("Click", (*) => CloseSettingsGui())
+    SettingsGui.OnEvent("Escape", (*) => CloseSettingsGui())
+    SettingsGui.OnEvent("Close", (*) => CloseSettingsGui())
 
     btnSave.OnEvent("Click", (*) => OnSave())
     OnSave() {
         rawKey := Trim(cbKey.Text)
         if (rawKey = "") {
-            MsgBox("Bitte geben Sie eine Taste ein oder wählen Sie eine aus der Liste.", "RightPosition", "Icon!")
+            MsgBox(T("err_no_key"), "RightPosition", "Icon!")
             return
         }
 
         hasMod := chkCtrl.Value || chkWin.Value || chkAlt.Value || chkShift.Value
         isSpecial := RegExMatch(rawKey, "i)^(F\d{1,2}|Pause|PrintScreen|ScrollLock)$")
         if (!hasMod && !isSpecial) {
-            ans := MsgBox("Sie haben keine Zusatztaste (Strg, Win, Alt, Shift) ausgewählt.`n`nEine Einzeltaste wie '" rawKey "' würde die normale Eingabe dieser Taste in allen Programmen blockieren!`n`nMöchten Sie wirklich fortfahren?", "RightPosition", "YesNo Icon!")
+            ans := MsgBox(T("warn_single_key", rawKey), "RightPosition", "YesNo Icon!")
             if (ans != "Yes")
                 return
         }
@@ -709,13 +1011,21 @@ ShowSettingsGui(*) {
         try IniWrite(CtrlRightClick ? "1" : "0", IniFile, "Settings", "CtrlRightClick")
         try IniWrite(CompensateBorders ? "1" : "0", IniFile, "Settings", "CompensateBorders")
 
+        ; Spracheinstellung speichern
+        newAppLang := (cbLang.Value = 2) ? "de" : (cbLang.Value = 3 ? "en" : "auto")
+        AppLang := newAppLang
+        try IniWrite(AppLang, IniFile, "Settings", "Language")
+        DetectLanguage()
+
         ; Autostart
         if (chkAuto.Value != IsAutostartEnabled()) {
             ToggleAutostart()
         }
 
-        SettingsGui.Destroy()
-        ShowToast("Einstellungen & Shortcut (" FormatHotkeyFriendly(HotkeyStr) ") gespeichert!")
+        SetupTrayMenu()
+        savedMsg := T("toast_settings_saved", FormatHotkeyFriendly(HotkeyStr))
+        CloseSettingsGui()
+        ShowToast(savedMsg)
     }
 
     SettingsGui.Show("w510")
@@ -725,6 +1035,7 @@ ShowSettingsGui(*) {
 ; Tray Menü & Autostart
 ; ------------------------------------------------------------------------------
 SetupTrayMenu() {
+    DetectLanguage()
     friendlyHk := FormatHotkeyFriendly(HotkeyStr)
     A_IconTip := "RightPosition (" friendlyHk ")"
 
@@ -734,21 +1045,21 @@ SetupTrayMenu() {
 
     tray := A_TrayMenu
     tray.Delete()
-    tray.Add("RightPosition Menü aufrufen (" friendlyHk ")", (*) => ShowRightPositionMenu())
-    tray.Default := "RightPosition Menü aufrufen (" friendlyHk ")"
+    tray.Add(T("tray_open", friendlyHk), (*) => ShowRightPositionMenu())
+    tray.Default := T("tray_open", friendlyHk)
     tray.Add()
-    tray.Add("⌨️ Shortcut & Einstellungen...", (*) => ShowSettingsGui())
-    tray.Add("⚙️ Einstellungen bearbeiten (INI)...", (*) => EditSettings())
-    tray.Add("Neu laden", (*) => Reload())
-    tray.Add("Mit Windows starten", ToggleAutostart)
+    tray.Add(T("tray_settings"), (*) => ShowSettingsGui())
+    tray.Add(T("menu_edit_ini"), (*) => EditSettings())
+    tray.Add(T("tray_reload"), (*) => Reload())
+    tray.Add(T("tray_autostart"), ToggleAutostart)
 
     if IsAutostartEnabled()
-        tray.Check("Mit Windows starten")
+        tray.Check(T("tray_autostart"))
     else
-        tray.Uncheck("Mit Windows starten")
+        tray.Uncheck(T("tray_autostart"))
 
     tray.Add()
-    tray.Add("Beenden", (*) => ExitApp())
+    tray.Add(T("tray_exit"), (*) => ExitApp())
 }
 
 EditSettings(*) {

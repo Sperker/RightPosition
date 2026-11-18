@@ -26,8 +26,9 @@ if not defined BASE_AHK (
     exit /b 1
 )
 
-echo Stopping any running instance of RightPosition.exe...
+echo Stopping any running instance of RightPosition...
 taskkill /F /IM RightPosition.exe >nul 2>&1
+taskkill /F /FI "IMAGENAME eq RightPosition*" >nul 2>&1
 ping -n 2 127.0.0.1 >nul
 
 echo Compiling RightPosition.ahk into RightPosition.exe with app.ico...
