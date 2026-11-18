@@ -40,6 +40,7 @@ Many developers, screencasters, QA engineers, and power users rely on window man
 | **1-Click Capture Size & Position** | ✔️ **Yes** | ✔️ Yes | ❌ No | ❌ No | ❌ No |
 | **Restore Exact Pixel Dimensions** | ✔️ **Yes** | ✔️ Yes | ✔️ Yes (Size only) | ❌ No (Grid-bound) | ❌ No (Grid-bound) |
 | **Free Floating Placement (X, Y)** | ✔️ **Yes** | ✔️ Yes | ❌ No (Predefined) | ❌ No (Tiled) | ❌ No (Tiled) |
+| **Interactive Shortcut Configurator (GUI)** | ✔️ **Yes (Live)** | ⚠️ INI only | ⚠️ Settings | ⚠️ Complex | ❌ Fixed (`Win+Z`) |
 | **Auditable Open-Source Code** | ✔️ **100% (MIT)** | ❌ Closed Source | ✔️ Open Source | ✔️ Open Source | ❌ Closed Source |
 | **No Admin Rights Required** | ✔️ **Yes** | ✔️ Yes | ⚠️ Needs Admin | ⚠️ Setup / Elevated | ✔️ Native |
 | **No DLL-Injection (EDR-Friendly)** | ✔️ **Zero Hooks** | ✔️ Clean | ⚠️ DLL Injection | ✔️ Clean | ✔️ Native |
@@ -55,12 +56,13 @@ Many developers, screencasters, QA engineers, and power users rely on window man
 
 - **💾 1-Click Geometry Capture**: With a single click on any window, capture its visible width, height, and relative X/Y coordinates on its monitor, and save it as a named preset.
 - **⭐ Instant Preset Restoration**: Presets appear directly at the top of the menu (`⭐`). Clicking a preset instantly snaps the window back to that exact size and position.
+- **⌨️ Customizable Shortcut (Interactive GUI)**: Change your hotkey anytime directly from the application menu or system tray without editing configuration files or restarting. Choose from popular presets (`Ctrl+Win+Z`, `Ctrl+Alt+Z`, `Win+Z`, `Ctrl+Alt+S`, etc.) or combine arbitrary modifier keys and buttons with instant live validation.
 - **🖥️ Multi-Monitor Awareness**: Windows stay anchored to the display they currently reside on via Win32 `MonitorFromWindow`.
 - **🪟 Windows 10/11 DWM Border Compensation**: Automatically accounts for invisible DWM drop shadows (~7–8 px) using `DwmGetWindowAttribute` to guarantee exact outer boundaries.
 - **🖱️ Versatile, Non-Intrusive Triggers**:
   - **Middle-Click on Title Bar** (classic Sizer workflow, detected via crash-safe `WM_NCHITTEST`).
   - **<kbd>Ctrl</kbd> + Right-Click** on any window.
-  - **<kbd>Ctrl</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>** (customizable global hotkey).
+  - **Customizable Global Hotkey** (Default: <kbd>Ctrl</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>).
 - **📋 Live Window Metrics**: Menu header displays the active window's dimensions; click to copy to clipboard.
 - **📐 Custom Size Dialog**: Prompt for ad-hoc custom dimensions (e.g. `1280x720`).
 - **⚙️ Portable INI Configuration**: Simple, human-readable [`settings.ini`](settings.ini).
@@ -75,10 +77,34 @@ Many developers, screencasters, QA engineers, and power users rely on window man
 3. It appears in the notification area (system tray) with the custom icon.
 4. Open the menu on any target window:
    - **Middle-click** the window title bar, **OR**
-   - Press **<kbd>Ctrl</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>**, **OR**
+   - Press **<kbd>Ctrl</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>** (or your customized hotkey), **OR**
    - Press **<kbd>Ctrl</kbd> + Right-Click** on the window.
 5. Select **`💾 Aktuelle Position & Größe speichern...`**, give it a name, and press <kbd>Enter</kbd>.
 6. The preset is now permanently available at the top of the menu!
+
+---
+
+## ⌨️ Customizing the Shortcut & Trigger Options
+
+You can customize your shortcut and trigger options anytime in two ways:
+
+### 1. Via the Built-in GUI (Recommended)
+1. Right-click the **RightPosition system tray icon** or open the window menu.
+2. Click **`⌨️ Shortcut & Einstellungen...`**.
+3. In the settings dialog:
+   - Choose a quick preset (e.g. `Ctrl + Alt + Z`, `Win + Z`, `Ctrl + Alt + S`, `Alt + Space`, `Ctrl + F12`) or freely check the modifier boxes (**Strg**, **Win**, **Alt**, **Shift**) and select/type any key.
+   - Preview your shortcut in real time.
+   - Enable or disable mouse triggers (middle-click title bar, Ctrl+Right-click).
+   - Toggle Windows 10/11 shadow border compensation and auto-start with Windows.
+4. Click **`💾 Speichern & Aktivieren`**. The new shortcut is validated and active immediately without restarting!
+
+### 2. Via `settings.ini`
+Advanced users can also edit [`settings.ini`](settings.ini) directly:
+```ini
+[Settings]
+; Hotkey (^ = Ctrl, # = Win, ! = Alt, + = Shift)
+Hotkey=^#z
+```
 
 ---
 
@@ -103,6 +129,7 @@ Many developers, screencasters, QA engineers, and power users rely on window man
 │ 📍 Positionieren                                    ▶ │  <- Center, Top-Left, etc.
 │ 🗑️ Preset löschen                                   ▶ │  <- 1-click preset removal
 ├────────────────────────────────────────────────────────┤
+│ ⌨️ Shortcut & Einstellungen (Strg + Win + Z)...        │  <- Interactive shortcut GUI
 │ ⚙️ Einstellungen bearbeiten (INI)...                   │  <- Opens settings.ini
 └────────────────────────────────────────────────────────┘
 ```

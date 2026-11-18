@@ -9,8 +9,9 @@ Persistent()
 ; Features:
 ; - Aktuelle Fensterposition & Größe per Klick als Preset abspeichern
 ; - Gespeicherte Presets per Klick wieder anwenden (Größe + Position)
+; - Konfigurierbare Hotkeys & Shortcuts (über moderne Einstellungen-GUI oder INI)
 ; - Aufruf per:
-;     * Hotkey: Strg + Win + Z (konfigurierbar)
+;     * Frei wählbarer Hotkey: Standardmäßig Strg + Win + Z
 ;     * Mittelklick auf die Titelleiste des Fensters
 ;     * Strg + Rechtsklick auf beliebiges Fenster
 ; - Multi-Monitor-Unterstützung (bleibt auf dem aktuellen Monitor)
@@ -25,23 +26,97 @@ global HotkeyStr := "^#z"
 global MiddleClickTitleBar := true
 global CtrlRightClick := true
 global CompensateBorders := true
+global SettingsGui := ""
 
 InitConfig()
 SetupTrayMenu()
 RegisterHotkeys()
 
 ; ------------------------------------------------------------------------------
-; Hotkeys registrieren
+; Hotkeys registrieren & verwalten
 ; ------------------------------------------------------------------------------
 RegisterHotkeys() {
     global HotkeyStr
     if (HotkeyStr != "") {
         try {
-            Hotkey(HotkeyStr, (*) => ShowRightPositionMenu())
+            Hotkey(HotkeyStr, (*) => ShowRightPositionMenu(), "On")
         } catch as err {
-            MsgBox("Fehler beim Registrieren des Hotkeys '" HotkeyStr "':`n" err.Message, "RightPosition", "Icon!")
+            MsgBox("Fehler beim Registrieren des Hotkeys '" FormatHotkeyFriendly(HotkeyStr) "' (" HotkeyStr "):`n" err.Message, "RightPosition", "Icon!")
         }
     }
+}
+
+UpdateHotkey(newHk) {
+    global HotkeyStr, IniFile
+    if (newHk = HotkeyStr)
+        return true
+
+    ; Erst versuchen, den neuen Hotkey zu aktivieren
+    try {
+        Hotkey(newHk, (*) => ShowRightPositionMenu(), "On")
+    } catch as err {
+        MsgBox("Der Shortcut '" FormatHotkeyFriendly(newHk) "' konnte nicht aktiviert werden:`n`n" err.Message "`n`nMöglicherweise ist dieser Shortcut bereits vom System oder einem anderen Programm belegt.", "RightPosition", "Icon!")
+        return false
+    }
+
+    ; Bisherigen Hotkey deaktivieren
+    if (HotkeyStr != "") {
+        try Hotkey(HotkeyStr, "Off")
+    }
+
+    HotkeyStr := newHk
+    try IniWrite(HotkeyStr, IniFile, "Settings", "Hotkey")
+    SetupTrayMenu()
+    return true
+}
+
+; ------------------------------------------------------------------------------
+; Formatierung & Parser für lesbare Hotkeys
+; ------------------------------------------------------------------------------
+FormatHotkeyFriendly(hk) {
+    if (hk = "")
+        return "Keiner"
+    str := ""
+    if InStr(hk, "^")
+        str .= "Strg + "
+    if InStr(hk, "#")
+        str .= "Win + "
+    if InStr(hk, "!")
+        str .= "Alt + "
+    if InStr(hk, "+")
+        str .= "Shift + "
+    
+    keyPart := RegExReplace(hk, "[\^#!+]")
+    switch StrLower(keyPart) {
+        case "space": keyPart := "Leertaste"
+        case "enter": keyPart := "Eingabetaste"
+        case "tab": keyPart := "Tab"
+        case "esc": keyPart := "Escape"
+        case "delete", "del": keyPart := "Entf"
+        case "insert", "ins": keyPart := "Einfg"
+        case "home": keyPart := "Pos1"
+        case "end": keyPart := "Ende"
+        case "pgup": keyPart := "BildAuf"
+        case "pgdn": keyPart := "BildAb"
+        case "up": keyPart := "Pfeil Oben"
+        case "down": keyPart := "Pfeil Unten"
+        case "left": keyPart := "Pfeil Links"
+        case "right": keyPart := "Pfeil Rechts"
+        default: keyPart := StrUpper(keyPart)
+    }
+    return str keyPart
+}
+
+ParseHotkeyToParts(hk, &hasCtrl, &hasWin, &hasAlt, &hasShift, &keyName) {
+    hasCtrl := InStr(hk, "^") ? 1 : 0
+    hasWin := InStr(hk, "#") ? 1 : 0
+    hasAlt := InStr(hk, "!") ? 1 : 0
+    hasShift := InStr(hk, "+") ? 1 : 0
+    keyName := RegExReplace(hk, "[\^#!+]")
+    if (keyName = "")
+        keyName := "Z"
+    else
+        keyName := StrUpper(keyName)
 }
 
 ; ------------------------------------------------------------------------------
@@ -134,12 +209,20 @@ CreateDefaultIni() {
     defaultIni := 
     (
         "[Settings]`r`n"
+        "; Tastenkombination zum Öffnen des Menüs (^ = Strg, # = Win, ! = Alt, + = Umschalt)`r`n"
         "Hotkey=^#z`r`n"
+        "`r`n"
+        "; Menü per Mittelklick auf die Fenstertitelleiste öffnen (1 = Ein, 0 = Aus)`r`n"
         "MiddleClickTitleBar=1`r`n"
+        "`r`n"
+        "; Menü per Strg + Rechtsklick auf ein beliebiges Fenster öffnen (1 = Ein, 0 = Aus)`r`n"
         "CtrlRightClick=1`r`n"
+        "`r`n"
+        "; Unsichtbare Fensterrahmen von Windows 10/11 ausgleichen (1 = Ja, 0 = Nein)`r`n"
         "CompensateBorders=1`r`n"
         "`r`n"
         "[Presets]`r`n"
+        "; Format: Name|Breite|Höhe|Modus|RelX|RelY`r`n"
         "Item1=1920 x 1080 (Full HD, Zentriert)|1920|1080|center|0|0`r`n"
         "Item2=1600 x 900 (HD+, Zentriert)|1600|900|center|0|0`r`n"
         "Item3=1280 x 720 (HD 720p, Zentriert)|1280|720|center|0|0`r`n"
@@ -224,7 +307,9 @@ ShowRightPositionMenu(targetHwnd := 0) {
         m.Add("🗑️ Preset löschen", delMenu)
     }
 
+    friendlyHk := FormatHotkeyFriendly(HotkeyStr)
     m.Add() ; Trennlinie
+    m.Add("⌨️ Shortcut & Einstellungen (" friendlyHk ")...", (*) => ShowSettingsGui())
     m.Add("⚙️ Einstellungen bearbeiten (INI)...", (*) => EditSettings())
 
     ; Menü an der aktuellen Mausposition öffnen
@@ -373,7 +458,7 @@ PromptCustomSize(hwnd) {
             ResizeTarget(hwnd, newW, newH, "center")
         }
     } else {
-        MsgBox("Ungültiges Format. Bitte z. B. '1280 x 720' eingeben.", "SizerAlternative", "Icon!")
+        MsgBox("Ungültiges Format. Bitte z. B. '1280 x 720' eingeben.", "RightPosition", "Icon!")
     }
 }
 
@@ -439,10 +524,209 @@ ShowToast(msg) {
 }
 
 ; ------------------------------------------------------------------------------
+; Einstellungen & Shortcut Dialog (GUI)
+; ------------------------------------------------------------------------------
+ShowSettingsGui(*) {
+    global SettingsGui, HotkeyStr, MiddleClickTitleBar, CtrlRightClick, CompensateBorders, IniFile, IconFile
+
+    ; Falls bereits geöffnet, in den Vordergrund bringen
+    if (SettingsGui is Gui && WinExist("ahk_id " SettingsGui.Hwnd)) {
+        SettingsGui.Show()
+        WinActivate("ahk_id " SettingsGui.Hwnd)
+        return
+    }
+
+    SettingsGui := Gui("+AlwaysOnTop -MinimizeBox", "RightPosition - Shortcut & Einstellungen")
+    SettingsGui.SetFont("s9", "Segoe UI")
+
+    ; Fenster-Icon setzen falls app.ico vorhanden
+    if FileExist(IconFile) {
+        try {
+            hIcon := DllCall("LoadImage", "Ptr", 0, "Str", IconFile, "UInt", 1, "Int", 32, "Int", 32, "UInt", 0x10, "Ptr")
+            if hIcon
+                DllCall("SendMessage", "Ptr", SettingsGui.Hwnd, "UInt", 0x80, "Ptr", 1, "Ptr", hIcon)
+        }
+    }
+
+    ParseHotkeyToParts(HotkeyStr, &curCtrl, &curWin, &curAlt, &curShift, &curKey)
+
+    ; --------------------------------------------------------------------------
+    ; Bereich 1: Tastatur-Shortcut
+    ; --------------------------------------------------------------------------
+    SettingsGui.Add("GroupBox", "x15 y10 w480 h175", "Tastatur-Shortcut (Menü aufrufen)")
+
+    SettingsGui.Add("Text", "x30 yp+25", "Schnellauswahl beliebter Tastenkombinationen:")
+    presetChoices := [
+        "Strg + Win + Z (Standard / Sizer)",
+        "Strg + Alt + Z",
+        "Win + Z",
+        "Strg + Alt + S",
+        "Strg + Shift + Z",
+        "Alt + Leertaste",
+        "Strg + F12",
+        "Benutzerdefiniert..."
+    ]
+    cbPreset := SettingsGui.Add("DropDownList", "x30 y+5 w280", presetChoices)
+
+    SettingsGui.Add("Text", "x30 y+12", "Zusatztasten (Modifikatoren):")
+    chkCtrl := SettingsGui.Add("Checkbox", "x30 y+5 Checked" curCtrl, "Strg (Ctrl)")
+    chkWin := SettingsGui.Add("Checkbox", "x+15 yp Checked" curWin, "Windows (Win)")
+    chkAlt := SettingsGui.Add("Checkbox", "x+15 yp Checked" curAlt, "Alt")
+    chkShift := SettingsGui.Add("Checkbox", "x+15 yp Checked" curShift, "Umschalt (Shift)")
+
+    SettingsGui.Add("Text", "x30 y+12", "Taste:")
+    keyList := [
+        "A","B","C","D","E","F","G","H","I","J","K","L","M",
+        "N","O","P","Q","R","S","T","U","V","W","X","Y","Z",
+        "0","1","2","3","4","5","6","7","8","9",
+        "F1","F2","F3","F4","F5","F6","F7","F8","F9","F10","F11","F12",
+        "Space","Tab","Enter","Esc","Delete","Insert","Home","End","PgUp","PgDn",
+        "Up","Down","Left","Right"
+    ]
+    cbKey := SettingsGui.Add("ComboBox", "x75 yp-3 w110", keyList)
+    cbKey.Text := curKey
+
+    txtPreview := SettingsGui.Add("Text", "x200 yp+3 w280 cBlue", "Aktiv: " FormatHotkeyFriendly(HotkeyStr))
+    txtPreview.SetFont("s9 Bold")
+
+    ; --------------------------------------------------------------------------
+    ; Bereich 2: Maus-Trigger
+    ; --------------------------------------------------------------------------
+    SettingsGui.Add("GroupBox", "x15 y+25 w480 h80", "Maus-Auslöser")
+    chkMiddle := SettingsGui.Add("Checkbox", "x30 yp+25 Checked" MiddleClickTitleBar, "Menü per Mittelklick auf Fenstertitelleiste öffnen")
+    chkCtrlRight := SettingsGui.Add("Checkbox", "x30 y+8 Checked" CtrlRightClick, "Menü per Strg + Rechtsklick auf beliebiges Fenster öffnen")
+
+    ; --------------------------------------------------------------------------
+    ; Bereich 3: Fenster-Verhalten & Autostart
+    ; --------------------------------------------------------------------------
+    SettingsGui.Add("GroupBox", "x15 y+20 w480 h80", "Fenster-Verhalten & System")
+    chkComp := SettingsGui.Add("Checkbox", "x30 yp+25 Checked" CompensateBorders, "Unsichtbare Windows 10/11 Schattenränder ausgleichen (pixelgenau)")
+    chkAuto := SettingsGui.Add("Checkbox", "x30 y+8 Checked" IsAutostartEnabled(), "Programm automatisch mit Windows starten")
+
+    ; --------------------------------------------------------------------------
+    ; Buttons
+    ; --------------------------------------------------------------------------
+    btnSave := SettingsGui.Add("Button", "x15 y+25 w160 h34 Default", "💾 Speichern && Aktivieren")
+    btnCancel := SettingsGui.Add("Button", "x+10 yp w110 h34", "Abbrechen")
+    btnReset := SettingsGui.Add("Button", "x+10 yp w190 h34", "Standard (Strg + Win + Z)")
+
+    ; Helper: Konstruiert Hotkey aus Checkboxen & Taste
+    GetSelectedHotkey() {
+        m := (chkCtrl.Value ? "^" : "") (chkWin.Value ? "#" : "") (chkAlt.Value ? "!" : "") (chkShift.Value ? "+" : "")
+        k := Trim(cbKey.Text)
+        return m (k != "" ? StrLower(k) : "")
+    }
+
+    UpdatePreview() {
+        hk := GetSelectedHotkey()
+        txtPreview.Text := "Vorschau: " FormatHotkeyFriendly(hk)
+    }
+
+    SelectMatchingPreset() {
+        hk := GetSelectedHotkey()
+        switch hk {
+            case "^#z": cbPreset.Choose(1)
+            case "^!z": cbPreset.Choose(2)
+            case "#z": cbPreset.Choose(3)
+            case "^!s": cbPreset.Choose(4)
+            case "^+z": cbPreset.Choose(5)
+            case "!space": cbPreset.Choose(6)
+            case "^f12": cbPreset.Choose(7)
+            default: cbPreset.Choose(8) ; Benutzerdefiniert...
+        }
+    }
+
+    OnPresetChanged() {
+        switch cbPreset.Value {
+            case 1: ; Strg + Win + Z
+                chkCtrl.Value := 1, chkWin.Value := 1, chkAlt.Value := 0, chkShift.Value := 0, cbKey.Text := "Z"
+            case 2: ; Strg + Alt + Z
+                chkCtrl.Value := 1, chkWin.Value := 0, chkAlt.Value := 1, chkShift.Value := 0, cbKey.Text := "Z"
+            case 3: ; Win + Z
+                chkCtrl.Value := 0, chkWin.Value := 1, chkAlt.Value := 0, chkShift.Value := 0, cbKey.Text := "Z"
+            case 4: ; Strg + Alt + S
+                chkCtrl.Value := 1, chkWin.Value := 0, chkAlt.Value := 1, chkShift.Value := 0, cbKey.Text := "S"
+            case 5: ; Strg + Shift + Z
+                chkCtrl.Value := 1, chkWin.Value := 0, chkAlt.Value := 0, chkShift.Value := 1, cbKey.Text := "Z"
+            case 6: ; Alt + Leertaste
+                chkCtrl.Value := 0, chkWin.Value := 0, chkAlt.Value := 1, chkShift.Value := 0, cbKey.Text := "Space"
+            case 7: ; Strg + F12
+                chkCtrl.Value := 1, chkWin.Value := 0, chkAlt.Value := 0, chkShift.Value := 0, cbKey.Text := "F12"
+        }
+        UpdatePreview()
+    }
+
+    OnModifierOrKeyChanged(*) {
+        UpdatePreview()
+        SelectMatchingPreset()
+    }
+
+    cbPreset.OnEvent("Change", (*) => OnPresetChanged())
+    chkCtrl.OnEvent("Click", OnModifierOrKeyChanged)
+    chkWin.OnEvent("Click", OnModifierOrKeyChanged)
+    chkAlt.OnEvent("Click", OnModifierOrKeyChanged)
+    chkShift.OnEvent("Click", OnModifierOrKeyChanged)
+    cbKey.OnEvent("Change", OnModifierOrKeyChanged)
+
+    SelectMatchingPreset()
+    UpdatePreview()
+
+    btnReset.OnEvent("Click", (*) => (cbPreset.Choose(1), OnPresetChanged()))
+    btnCancel.OnEvent("Click", (*) => SettingsGui.Destroy())
+    SettingsGui.OnEvent("Escape", (*) => SettingsGui.Destroy())
+    SettingsGui.OnEvent("Close", (*) => SettingsGui.Destroy())
+
+    btnSave.OnEvent("Click", (*) => OnSave())
+    OnSave() {
+        rawKey := Trim(cbKey.Text)
+        if (rawKey = "") {
+            MsgBox("Bitte geben Sie eine Taste ein oder wählen Sie eine aus der Liste.", "RightPosition", "Icon!")
+            return
+        }
+
+        hasMod := chkCtrl.Value || chkWin.Value || chkAlt.Value || chkShift.Value
+        isSpecial := RegExMatch(rawKey, "i)^(F\d{1,2}|Pause|PrintScreen|ScrollLock)$")
+        if (!hasMod && !isSpecial) {
+            ans := MsgBox("Sie haben keine Zusatztaste (Strg, Win, Alt, Shift) ausgewählt.`n`nEine Einzeltaste wie '" rawKey "' würde die normale Eingabe dieser Taste in allen Programmen blockieren!`n`nMöchten Sie wirklich fortfahren?", "RightPosition", "YesNo Icon!")
+            if (ans != "Yes")
+                return
+        }
+
+        targetHk := GetSelectedHotkey()
+
+        ; Hotkey aktualisieren falls geändert
+        if (targetHk != HotkeyStr) {
+            if !UpdateHotkey(targetHk)
+                return
+        }
+
+        ; Maus-Auslöser & Fensterverhalten speichern
+        MiddleClickTitleBar := chkMiddle.Value
+        CtrlRightClick := chkCtrlRight.Value
+        CompensateBorders := chkComp.Value
+
+        try IniWrite(MiddleClickTitleBar ? "1" : "0", IniFile, "Settings", "MiddleClickTitleBar")
+        try IniWrite(CtrlRightClick ? "1" : "0", IniFile, "Settings", "CtrlRightClick")
+        try IniWrite(CompensateBorders ? "1" : "0", IniFile, "Settings", "CompensateBorders")
+
+        ; Autostart
+        if (chkAuto.Value != IsAutostartEnabled()) {
+            ToggleAutostart()
+        }
+
+        SettingsGui.Destroy()
+        ShowToast("Einstellungen & Shortcut (" FormatHotkeyFriendly(HotkeyStr) ") gespeichert!")
+    }
+
+    SettingsGui.Show("w510")
+}
+
+; ------------------------------------------------------------------------------
 ; Tray Menü & Autostart
 ; ------------------------------------------------------------------------------
 SetupTrayMenu() {
-    A_IconTip := "RightPosition (" HotkeyStr ")"
+    friendlyHk := FormatHotkeyFriendly(HotkeyStr)
+    A_IconTip := "RightPosition (" friendlyHk ")"
 
     if FileExist(IconFile) {
         try TraySetIcon(IconFile)
@@ -450,10 +734,11 @@ SetupTrayMenu() {
 
     tray := A_TrayMenu
     tray.Delete()
-    tray.Add("RightPosition Menü aufrufen (" HotkeyStr ")", (*) => ShowRightPositionMenu())
-    tray.Default := "RightPosition Menü aufrufen (" HotkeyStr ")"
+    tray.Add("RightPosition Menü aufrufen (" friendlyHk ")", (*) => ShowRightPositionMenu())
+    tray.Default := "RightPosition Menü aufrufen (" friendlyHk ")"
     tray.Add()
-    tray.Add("Einstellungen bearbeiten (INI)...", (*) => EditSettings())
+    tray.Add("⌨️ Shortcut & Einstellungen...", (*) => ShowSettingsGui())
+    tray.Add("⚙️ Einstellungen bearbeiten (INI)...", (*) => EditSettings())
     tray.Add("Neu laden", (*) => Reload())
     tray.Add("Mit Windows starten", ToggleAutostart)
 
@@ -470,17 +755,19 @@ EditSettings(*) {
     Run(IniFile)
 }
 
-ToggleAutostart(item, *) {
+ToggleAutostart(item := "", *) {
     regKey := "HKCU\Software\Microsoft\Windows\CurrentVersion\Run"
     appName := "RightPosition"
 
     if IsAutostartEnabled() {
         RegDelete(regKey, appName)
-        A_TrayMenu.Uncheck(item)
+        if (item != "" && Type(item) = "String")
+            A_TrayMenu.Uncheck(item)
     } else {
         targetPath := A_IsCompiled ? ('"' A_ScriptFullPath '"') : ('"' A_AhkPath '" "' A_ScriptFullPath '"')
         RegWrite(targetPath, "REG_SZ", regKey, appName)
-        A_TrayMenu.Check(item)
+        if (item != "" && Type(item) = "String")
+            A_TrayMenu.Check(item)
     }
 }
 
@@ -493,4 +780,3 @@ IsAutostartEnabled() {
     }
     return false
 }
-

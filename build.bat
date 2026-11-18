@@ -16,19 +16,19 @@ if not defined BASE_AHK if exist "%LOCALAPPDATA%\Programs\AutoHotkey\v2\AutoHotk
 
 if not defined AHK2EXE (
     echo [ERROR] Ahk2Exe.exe was not found. Please ensure AutoHotkey v2 + Compiler is installed.
-    pause
+    if "%~1"=="" pause
     exit /b 1
 )
 
 if not defined BASE_AHK (
     echo [ERROR] AutoHotkey64.exe was not found.
-    pause
+    if "%~1"=="" pause
     exit /b 1
 )
 
 echo Stopping any running instance of RightPosition.exe...
 taskkill /F /IM RightPosition.exe >nul 2>&1
-timeout /t 1 /nobreak >nul
+ping -n 2 127.0.0.1 >nul
 
 echo Compiling RightPosition.ahk into RightPosition.exe with app.ico...
 "%AHK2EXE%" /in "RightPosition.ahk" /out "RightPosition.exe" /icon "app.ico" /base "%BASE_AHK%" /silent
@@ -42,4 +42,4 @@ if %ERRORLEVEL% EQU 0 (
     echo [FAILED] Compilation failed with error code %ERRORLEVEL%.
 )
 
-pause
+if "%~1"=="" pause

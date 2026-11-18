@@ -40,6 +40,7 @@ Viele Entwickler, Screencaster, QA-Tester und Power-User sind auf Werkzeuge wie 
 | **Position & Größe per 1-Klick speichern** | ✔️ **Ja** | ✔️ Ja | ❌ Nein | ❌ Nein | ❌ Nein |
 | **Pixelgenaue Zielmaße (z.B. 1920×1080)** | ✔️ **Ja** | ✔️ Ja | ✔️ Ja (Nur Größe) | ❌ Nein (Nur Raster) | ❌ Nein (Nur Raster) |
 | **Frei schwebende Platzierung (X, Y)** | ✔️ **Ja** | ✔️ Ja | ❌ Nein (Starr) | ❌ Nein (Kachel) | ❌ Nein (Kachel) |
+| **Interaktiver Shortcut-Konfigurator (GUI)** | ✔️ **Ja (Live)** | ⚠️ Nur INI | ⚠️ Einstellungs-Menü | ⚠️ Komplex | ❌ Fest (`Win+Z`) |
 | **Auditierbarer Open-Source-Code** | ✔️ **100% (MIT)** | ❌ Closed Source | ✔️ Open Source | ✔️ Open Source | ❌ Closed Source |
 | **Keine Admin-Rechte erforderlich** | ✔️ **Ja** | ✔️ Ja | ⚠️ Meist Admin | ⚠️ Installer / Rechte | ✔️ Nativ |
 | **Keine DLL-Injection (EDR-freundlich)** | ✔️ **Sauber** | ✔️ Sauber | ⚠️ DLL-Injection | ✔️ Sauber | ✔️ Nativ |
@@ -55,12 +56,13 @@ Viele Entwickler, Screencaster, QA-Tester und Power-User sind auf Werkzeuge wie 
 
 - **💾 1-Klick Fenstergeometrie speichern**: Liest Breite, Höhe und die relative Position (X, Y) auf dem Monitor mit einem Klick aus und legt ein benanntes Preset an.
 - **⭐ Sofortige Wiederherstellung**: Gespeicherte Presets erscheinen ganz oben im Menü (`⭐`). Ein Klick stellt Größe **und** Position auf dem Bildschirm wieder her.
+- **⌨️ Frei konfigurierbarer Shortcut (Interaktive GUI)**: Ändern Sie Ihren bevorzugten Hotkey jederzeit direkt über das Menü oder den System-Tray – ohne manuelles Bearbeiten von Textdateien und ohne Neustart. Beliebte Tastenkombinationen (`Strg+Win+Z`, `Strg+Alt+Z`, `Win+Z`, `Strg+Alt+S` etc.) sind sofort wählbar oder beliebig frei kombinierbar.
 - **🖥️ Multi-Monitor-Unterstützung**: Erkennt über Win32 `MonitorFromWindow` automatisch den Monitor des Fensters. Fenster springen niemals ungewollt auf Bildschirm 1.
 - **🪟 Windows 10/11 DWM Schattenrand-Ausgleich**: Gleicht die unsichtbaren DWM-Rahmen (~7–8 Pixel) über `DwmGetWindowAttribute` aus, sodass die sichtbaren Kanten exakt der Zielauflösung entsprechen.
 - **🖱️ Vielseitige, unaufdringliche Trigger**:
   - **Mittelklick auf die Titelleiste** (bekannter Sizer-Workflow, absturzsicher via `WM_NCHITTEST`).
   - **<kbd>Strg</kbd> + Rechtsklick** auf ein beliebiges Fenster.
-  - **<kbd>Strg</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>** (frei anpassbarer globaler Hotkey).
+  - **Frei anpassbarer globaler Hotkey** (Standard: <kbd>Strg</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>).
 - **📋 Live-Maße & Zwischenablage**: Die oberste Menüzeile zeigt die aktuellen Abmessungen des Fensters an; ein Klick kopiert die Werte in die Zwischenablage.
 - **📐 Freie Maße eingeben**: Schnelle Eingabe beliebiger Auflösungen (z. B. `1280x720`).
 - **⚙️ Portable Konfiguration**: Alle Einstellungen liegen lokal in der lesbaren [`settings.ini`](settings.ini).
@@ -75,10 +77,34 @@ Viele Entwickler, Screencaster, QA-Tester und Power-User sind auf Werkzeuge wie 
 3. Das Programm erscheint im Infobereich der Taskleiste (System-Tray).
 4. Rufen Sie das Menü an einem Zielfenster auf:
    - **Mittelklick** auf die Titelleiste, **ODER**
-   - **<kbd>Strg</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>**, **ODER**
+   - **<kbd>Strg</kbd> + <kbd>Win</kbd> + <kbd>Z</kbd>** (oder Ihr eigener Shortcut), **ODER**
    - **<kbd>Strg</kbd> + Rechtsklick** auf das Fenster.
 5. Klicken Sie auf **`💾 Aktuelle Position & Größe speichern...`**, vergeben Sie einen Namen und drücken Sie <kbd>Enter</kbd>.
 6. Das Preset steht sofort dauerhaft zur Verfügung!
+
+---
+
+## ⌨️ Shortcut & Auslöser-Optionen anpassen
+
+Sie können das Tastenkürzel und das Auslöseverhalten jederzeit auf zwei Wegen anpassen:
+
+### 1. Über die integrierte Einstellungen-GUI (Empfohlen)
+1. Klicken Sie mit der rechten Maustaste auf das **RightPosition-Symbol im System-Tray** (Taskleiste) oder öffnen Sie das Fenstermenü.
+2. Wählen Sie **`⌨️ Shortcut & Einstellungen...`**.
+3. Im Dialogfenster können Sie:
+   - Einen Schnellauswahl-Shortcut wählen (`Strg + Alt + Z`, `Win + Z`, `Strg + Alt + S`, `Alt + Leertaste`, `Strg + F12` etc.) oder die Tasten (**Strg**, **Win**, **Alt**, **Shift**) und die Einzeltaste frei zusammenstellen.
+   - Eine Live-Vorschau der Tastenkombination sehen.
+   - Die Mausauslöser aktivieren/deaktivieren (Mittelklick auf Titelleiste, Strg+Rechtsklick).
+   - Die Schattenrand-Kompensation und den automatischen Windows-Autostart umschalten.
+4. Mit **`💾 Speichern & Aktivieren`** bestätigen: Der neue Shortcut ist **sofort live aktiv**, ohne das Programm neu starten zu müssen!
+
+### 2. Über die Konfigurationsdatei (`settings.ini`)
+Power-User können die Datei [`settings.ini`](settings.ini) auch direkt im Texteditor bearbeiten:
+```ini
+[Settings]
+; Hotkey (^ = Strg, # = Win, ! = Alt, + = Umschalt)
+Hotkey=^#z
+```
 
 ---
 
@@ -103,6 +129,7 @@ Viele Entwickler, Screencaster, QA-Tester und Power-User sind auf Werkzeuge wie 
 │ 📍 Positionieren                                    ▶ │  <- Zentrieren, Oben links etc.
 │ 🗑️ Preset löschen                                   ▶ │  <- Preset per Klick löschen
 ├────────────────────────────────────────────────────────┤
+│ ⌨️ Shortcut & Einstellungen (Strg + Win + Z)...        │  <- Interaktiver Shortcut-Dialog
 │ ⚙️ Einstellungen bearbeiten (INI)...                   │  <- Öffnet settings.ini
 └────────────────────────────────────────────────────────┘
 ```

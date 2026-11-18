@@ -8,6 +8,8 @@
 * - Kopie*
 * - Copy*
 Compile.txt
+*.zip
+RightPosition v*.exe
 
 # IDE & Editor folders
 .vscode/
